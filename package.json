@@ -1,20 +1,41 @@
 {
   "name": "flashcards",
   "version": "0.1.0",
+  "description": "Flashcard con ripetizione dilazionata per imparare vocabolario. PWA offline-first, dati nel browser.",
   "private": true,
   "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "flashcards",
+    "spaced-repetition",
+    "srs",
+    "sm-2",
+    "pwa",
+    "vanilla-js",
+    "offline-first"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "dev": "npx serve .",
+    "dev": "npx serve . -l 3000",
+    "start": "npx serve . -l 3000",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "verify": "npm run lint && npm run test"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
-    "eslint": "^9.0.0",
-    "prettier": "^3.0.0",
-    "serve": "^14.0.0",
-    "vitest": "^2.0.0"
+    "@eslint/js": "^9.15.0",
+    "@vitest/coverage-v8": "^2.1.5",
+    "eslint": "^9.15.0",
+    "fake-indexeddb": "^6.0.0",
+    "prettier": "^3.3.3",
+    "serve": "^14.2.4",
+    "vitest": "^2.1.5"
   }
 }

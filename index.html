@@ -1,17 +1,28 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
-  <meta name="description" content="Flashcard con ripetizione dilazionata per imparare vocabolario." />
+  <meta name="description" content="Flashcard con ripetizione dilazionata per imparare vocabolario. Funziona offline, i dati restano nel browser." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Flashcards" />
+
+  <title>Flashcards — Ripetizione dilazionata</title>
+
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="icon" type="image/png" href="/public/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/public/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/public/icons/icon-512.png" />
   <link rel="apple-touch-icon" href="/public/icons/apple-touch-icon.png" />
+
   <link rel="stylesheet" href="/src/styles/tokens.css" />
   <link rel="stylesheet" href="/src/styles/base.css" />
-  <title>Flashcards</title>
+  <link rel="stylesheet" href="/src/styles/layout.css" />
+  <link rel="stylesheet" href="/src/styles/components.css" />
+  <link rel="stylesheet" href="/src/styles/views.css" />
 </head>
 <body>
   <a class="skip-link" href="#main">Salta al contenuto</a>
@@ -19,23 +30,36 @@
   <header class="app-header">
     <div class="app-header__inner">
       <h1 class="app-title">Flashcards</h1>
-      <nav class="app-nav" aria-label="Principale">
+
+      <nav class="app-nav" aria-label="Navigazione principale">
         <a href="#/home" data-route>Home</a>
         <a href="#/decks" data-route>Mazzi</a>
         <a href="#/stats" data-route>Statistiche</a>
         <a href="#/settings" data-route>Impostazioni</a>
       </nav>
-      <button type="button" id="theme-toggle" class="btn-icon" aria-label="Cambia tema">🌓</button>
+
+      <button
+        type="button"
+        id="theme-toggle"
+        class="btn-icon"
+        aria-label="Cambia tema chiaro/scuro"
+        title="Cambia tema"
+      >
+        🌓
+      </button>
     </div>
   </header>
 
-  <main id="main" class="app-main" tabindex="-1"></main>
+  <main id="main" class="app-main" tabindex="-1" aria-live="polite"></main>
 
+  <!-- ===================== Template: HOME ===================== -->
   <template id="view-home">
-    <section class="view view--home">
-      <h2>Pronto a studiare?</h2>
+    <section class="view view--home" aria-labelledby="home-title">
+      <h2 id="home-title">Pronto a studiare?</h2>
       <p class="muted">Carte in scadenza oggi e nuove carte da imparare.</p>
+
       <div class="home-summary" id="home-summary"></div>
+
       <div class="home-actions">
         <a href="#/study" class="btn btn-primary">Inizia sessione</a>
         <a href="#/quiz" class="btn">Quiz</a>
@@ -43,45 +67,66 @@
     </section>
   </template>
 
+  <!-- ===================== Template: STUDY ===================== -->
   <template id="view-study">
-    <section class="view view--study">
+    <section class="view view--study" aria-label="Sessione di studio">
       <div class="study-header">
-        <progress id="study-progress" value="0" max="1"></progress>
-        <button type="button" id="study-exit" class="btn-icon" aria-label="Esci dalla sessione">✕</button>
+        <progress id="study-progress" value="0" max="1" aria-label="Avanzamento sessione"></progress>
+        <button
+          type="button"
+          id="study-exit"
+          class="btn-icon"
+          aria-label="Esci dalla sessione"
+          title="Esci"
+        >
+          ✕
+        </button>
       </div>
+
       <div id="study-card" class="card-slot" aria-live="polite"></div>
-      <div id="study-controls" class="study-controls"></div>
     </section>
   </template>
 
+  <!-- ===================== Template: QUIZ ===================== -->
   <template id="view-quiz">
-    <section class="view view--quiz">
-      <h2>Quiz</h2>
-      <div id="quiz-card" class="card-slot"></div>
+    <section class="view view--quiz" aria-labelledby="quiz-title">
+      <h2 id="quiz-title">Quiz</h2>
+      <div id="quiz-card" class="card-slot" aria-live="polite"></div>
     </section>
   </template>
 
+  <!-- ===================== Template: STATS ===================== -->
   <template id="view-stats">
-    <section class="view view--stats">
-      <h2>Statistiche</h2>
+    <section class="view view--stats" aria-labelledby="stats-title">
+      <h2 id="stats-title">Statistiche</h2>
       <div id="stats-content"></div>
     </section>
   </template>
 
+  <!-- ===================== Template: DECKS ===================== -->
   <template id="view-decks">
-    <section class="view view--decks">
-      <h2>Mazzi</h2>
+    <section class="view view--decks" aria-labelledby="decks-title">
+      <h2 id="decks-title">Mazzi</h2>
       <div id="decks-list"></div>
     </section>
   </template>
 
+  <!-- ===================== Template: SETTINGS ===================== -->
   <template id="view-settings">
-    <section class="view view--settings">
-      <h2>Impostazioni</h2>
+    <section class="view view--settings" aria-labelledby="settings-title">
+      <h2 id="settings-title">Impostazioni</h2>
       <div id="settings-content"></div>
     </section>
   </template>
 
+  <!-- ===================== Script applicativo ===================== -->
   <script type="module" src="/src/main.js"></script>
+
+  <!-- Fallback per browser senza ES modules -->
+  <noscript>
+    <p style="padding: 1rem; text-align: center;">
+      Questa app richiede JavaScript abilitato per funzionare.
+    </p>
+  </noscript>
 </body>
 </html>
