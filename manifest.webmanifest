@@ -1,0 +1,27 @@
+{
+  "name": "Flashcards — Ripetizione dilazionata",
+  "short_name": "Flashcards",
+  "description": "Impara vocabolario con flashcard e ripetizione dilazionata.",
+  "lang": "it",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "/public/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/public/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "/public/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    { "src": "/public/screenshots/home.png", "sizes": "1080x1920", "type": "image/png" },
+    { "src": "/public/screenshots/study.png", "sizes": "1080x1920", "type": "image/png" }
+  ],
+  "categories": ["education", "productivity"]
+}
