@@ -1,99 +1,547 @@
 <!DOCTYPE html>
-<html lang="it" data-theme="light">
+<html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="color-scheme" content="light dark" />
-  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
-  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
-  <meta name="description" content="Flashcard con ripetizione dilazionata per imparare vocabolario. Funziona offline, i dati restano nel browser." />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Flashcards" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcard – Impara le lingue</title>
 
-  <title>Flashcards — Ripetizione dilazionata</title>
+  <style>
+    /* ---------- RESET + TEMA ---------- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="icon" type="image/svg+xml" href="./public/icons/icon.svg" />
+    :root {
+      --bg: #f5f7fb;
+      --card-bg: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #3b82f6;
+      --accent-dark: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --border: #e5e7eb;
+      --shadow: 0 4px 16px rgba(0,0,0,.08);
+      --radius: 16px;
+    }
 
-  <link rel="stylesheet" href="./src/styles/tokens.css" />
-  <link rel="stylesheet" href="./src/styles/base.css" />
-  <link rel="stylesheet" href="./src/styles/layout.css" />
-  <link rel="stylesheet" href="./src/styles/components.css" />
-  <link rel="stylesheet" href="./src/styles/views.css" />
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      max-width: 720px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    header p {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    /* ---------- CONTROLLI ---------- */
+    .controls {
+      width: 100%;
+      max-width: 720px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 560px) {
+      .controls { grid-template-columns: 1fr; }
+    }
+    .controls label {
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .controls select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      font-size: 0.9rem;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .controls select:focus { outline: 2px solid var(--accent); }
+
+    /* ---------- BARRA PROGRESSO ---------- */
+    .progress {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .progress-bar {
+      flex: 1;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-bar > div {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+      width: 0%;
+      transition: width .3s ease;
+    }
+
+    /* ---------- CARD ---------- */
+    .card-wrap {
+      width: 100%;
+      max-width: 720px;
+      perspective: 1200px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      min-height: 340px;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform .5s cubic-bezier(.4,.0,.2,1);
+    }
+    .card.flipped { transform: rotateY(180deg); }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 24px;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backface-visibility: hidden;
+      border: 1px solid var(--border);
+    }
+    .card-back { transform: rotateY(180deg); }
+
+    .card-emoji { font-size: 3rem; line-height: 1; }
+    .card-text  { font-size: 2rem; font-weight: 700; text-align: center; }
+    .card-phon  { font-size: 1rem; color: var(--muted); font-style: italic; }
+    .card-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+    }
+    .card-badge.theme { left: auto; right: 12px; background: var(--muted); }
+
+    .card-hint {
+      position: absolute;
+      bottom: 12px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* ---------- AZIONI ---------- */
+    .actions {
+      width: 100%;
+      max-width: 720px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .btn {
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .1s ease, background .2s ease;
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn:hover  { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.primary:hover { background: var(--accent-dark); }
+    .btn.success { background: var(--success); color: #fff; border-color: var(--success); }
+    .btn.danger  { background: var(--danger);  color: #fff; border-color: var(--danger); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+    /* ---------- EMPTY STATE ---------- */
+    .empty {
+      width: 100%;
+      max-width: 720px;
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted);
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      border: 1px dashed var(--border);
+    }
+    .empty h2 { font-size: 1.1rem; margin-bottom: 8px; color: var(--text); }
+
+    /* ---------- FOOTER ---------- */
+    footer {
+      margin-top: 24px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-  <a class="skip-link" href="#main">Salta al contenuto</a>
 
-  <header class="app-header">
-    <div class="app-header__inner">
-      <h1 class="app-title">Flashcards</h1>
-
-      <nav class="app-nav" aria-label="Navigazione principale">
-        <a href="#/home" data-route>Home</a>
-        <a href="#/decks" data-route>Mazzi</a>
-        <a href="#/stats" data-route>Statistiche</a>
-        <a href="#/settings" data-route>Impostazioni</a>
-      </nav>
-
-      <button type="button" id="theme-toggle" class="btn-icon" aria-label="Cambia tema chiaro/scuro" title="Cambia tema">
-        🌓
-      </button>
-    </div>
+  <header>
+    <h1>🃏 Flashcard</h1>
+    <p>Impara le lingue — tema e difficoltà</p>
   </header>
 
-  <main id="main" class="app-main" tabindex="-1" aria-live="polite"></main>
+  <!-- Selettori -->
+  <div class="controls">
+    <div>
+      <label for="deckSelect">Mazzo</label>
+      <select id="deckSelect"></select>
+    </div>
+    <div>
+      <label for="themeSelect">Tema</label>
+      <select id="themeSelect">
+        <option value="">Tutti i temi</option>
+      </select>
+    </div>
+    <div>
+      <label for="levelSelect">Difficoltà</label>
+      <select id="levelSelect">
+        <option value="">Tutti i livelli</option>
+      </select>
+    </div>
+  </div>
 
-  <template id="view-home">
-    <section class="view view--home" aria-labelledby="home-title">
-      <h2 id="home-title">Pronto a studiare?</h2>
-      <p class="muted">Carte in scadenza oggi e nuove carte da imparare.</p>
-      <div class="home-summary" id="home-summary"></div>
-      <div class="home-actions">
-        <a href="#/study" class="btn btn-primary">Inizia sessione</a>
-        <a href="#/quiz" class="btn">Quiz</a>
-      </div>
-    </section>
-  </template>
+  <!-- Progresso -->
+  <div class="progress">
+    <span id="counter">0 / 0</span>
+    <div class="progress-bar"><div id="progressFill"></div></div>
+    <span id="pct">0%</span>
+  </div>
 
-  <template id="view-study">
-    <section class="view view--study" aria-label="Sessione di studio">
-      <div class="study-header">
-        <progress id="study-progress" value="0" max="1" aria-label="Avanzamento sessione"></progress>
-        <button type="button" id="study-exit" class="btn-icon" aria-label="Esci dalla sessione" title="Esci">✕</button>
-      </div>
-      <div id="study-card" class="card-slot" aria-live="polite"></div>
-    </section>
-  </template>
+  <!-- Card -->
+  <div id="cardWrap" class="card-wrap"></div>
 
-  <template id="view-quiz">
-    <section class="view view--quiz" aria-labelledby="quiz-title">
-      <h2 id="quiz-title">Quiz</h2>
-      <div id="quiz-card" class="card-slot" aria-live="polite"></div>
-    </section>
-  </template>
+  <!-- Azioni -->
+  <div class="actions">
+    <button id="prevBtn" class="btn">← Indietro</button>
+    <button id="flipBtn" class="btn primary">Gira</button>
+    <button id="nextBtn" class="btn">Avanti →</button>
+  </div>
+  <div class="actions" style="margin-top:8px; grid-template-columns: 1fr 1fr;">
+    <button id="knowBtn"   class="btn success">✓ Lo sapevo</button>
+    <button id="reviewBtn" class="btn danger">✗ Da rivedere</button>
+  </div>
 
-  <template id="view-stats">
-    <section class="view view--stats" aria-labelledby="stats-title">
-      <h2 id="stats-title">Statistiche</h2>
-      <div id="stats-content"></div>
-    </section>
-  </template>
+  <footer>
+    <span id="stats">—</span>
+  </footer>
 
-  <template id="view-decks">
-    <section class="view view--decks" aria-labelledby="decks-title">
-      <h2 id="decks-title">Mazzi</h2>
-      <div id="decks-list"></div>
-    </section>
-  </template>
+  <!-- =====================================================================
+       ORDINE DI CARICAMENTO OBBLIGATORIO
+       1) data.js   → definisce DECKS
+       2) meta.js   → arricchisce DECKS con theme/level + aggiunge carte EN
+       3) script app (sotto) → usa filterCards, THEMES, LEVELS
+       ===================================================================== -->
+  <script src="data.js"></script>
+  <script src="meta.js"></script>
 
-  <template id="view-settings">
-    <section class="view view--settings" aria-labelledby="settings-title">
-      <h2 id="settings-title">Impostazioni</h2>
-      <div id="settings-content"></div>
-    </section>
-  </template>
+  <script>
+  (function () {
+    "use strict";
 
-  <script type="module" src="./src/main.js"></script>
+    // ---------- RIFERIMENTI DOM ----------
+    const deckSel    = document.getElementById("deckSelect");
+    const themeSel   = document.getElementById("themeSelect");
+    const levelSel   = document.getElementById("levelSelect");
+    const cardWrap   = document.getElementById("cardWrap");
+    const prevBtn    = document.getElementById("prevBtn");
+    const nextBtn    = document.getElementById("nextBtn");
+    const flipBtn    = document.getElementById("flipBtn");
+    const knowBtn    = document.getElementById("knowBtn");
+    const reviewBtn  = document.getElementById("reviewBtn");
+    const counter    = document.getElementById("counter");
+    const pctEl      = document.getElementById("pct");
+    const fillEl     = document.getElementById("progressFill");
+    const statsEl    = document.getElementById("stats");
+
+    // ---------- STATO ----------
+    const state = {
+      deckId: null,
+      theme: "",
+      level: "",
+      cards: [],        // carte filtrate
+      index: 0,
+      flipped: false,
+      known: new Set(), // front delle carte "lo sapevo"
+      review: new Set(),// front delle carte "da rivedere"
+    };
+
+    // ---------- INIT: popola i mazzi ----------
+    function populateDecks() {
+      deckSel.innerHTML = "";
+      for (const deck of DECKS) {
+        const opt = document.createElement("option");
+        opt.value = deck.id;
+        opt.textContent = `${deck.flag} ${deck.name} (${deck.cards.length})`;
+        deckSel.appendChild(opt);
+      }
+      state.deckId = DECKS[0]?.id || null;
+      deckSel.value = state.deckId;
+    }
+
+    // ---------- POPOLA TEMI E LIVELLI in base al mazzo ----------
+    function populateFilters() {
+      const deck = DECKS.find((d) => d.id === state.deckId);
+      if (!deck) return;
+
+      themeSel.innerHTML = '<option value="">Tutti i temi</option>';
+      const themes = getThemesForCards(deck.cards);
+      for (const t of themes) {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = `${t.emoji} ${t.name}`;
+        themeSel.appendChild(opt);
+      }
+
+      levelSel.innerHTML = '<option value="">Tutti i livelli</option>';
+      const levels = getLevelsForCards(deck.cards);
+      for (const l of levels) {
+        const opt = document.createElement("option");
+        opt.value = l.id;
+        opt.textContent = l.name;
+        levelSel.appendChild(opt);
+      }
+
+      themeSel.value = "";
+      levelSel.value = "";
+    }
+
+    // ---------- FILTRA E RICOSTRUISCI LA LISTA CARTE ----------
+    function rebuildCards() {
+      const deck = DECKS.find((d) => d.id === state.deckId);
+      if (!deck) return;
+
+      state.cards = filterCards(deck.cards, {
+        theme: state.theme || undefined,
+        level: state.level || undefined,
+      });
+
+      // Reset navigazione
+      state.index = 0;
+      state.flipped = false;
+      state.known.clear();
+      state.review.clear();
+
+      render();
+    }
+
+    // ---------- RENDER CARD ----------
+    function render() {
+      const total = state.cards.length;
+
+      // Nessuna carta
+      if (total === 0) {
+        cardWrap.innerHTML = `
+          <div class="empty">
+            <h2>Nessuna carta trovata</h2>
+            <p>Prova a cambiare tema o difficoltà.</p>
+          </div>`;
+        counter.textContent = "0 / 0";
+        pctEl.textContent = "0%";
+        fillEl.style.width = "0%";
+        statsEl.textContent = "—";
+        setButtonsDisabled(true);
+        return;
+      }
+
+      setButtonsDisabled(false);
+
+      // Clamp index
+      if (state.index < 0) state.index = 0;
+      if (state.index >= total) state.index = total - 1;
+
+      const card = state.cards[state.index];
+      const theme = THEMES.find((t) => t.id === card.theme);
+      const themeLabel = theme ? `${theme.emoji} ${theme.name}` : card.theme || "";
+
+      cardWrap.innerHTML = `
+        <div class="card ${state.flipped ? "flipped" : ""}" id="cardEl">
+          <div class="card-face card-front">
+            <span class="card-badge">${card.level || ""}</span>
+            <span class="card-badge theme">${themeLabel}</span>
+            ${card.emoji ? `<div class="card-emoji">${card.emoji}</div>` : ""}
+            <div class="card-text">${escapeHtml(card.front)}</div>
+            ${card.phon ? `<div class="card-phon">${escapeHtml(card.phon)}</div>` : ""}
+            <div class="card-hint">Tocca la card per girare</div>
+          </div>
+          <div class="card-face card-back">
+            <span class="card-badge">${card.level || ""}</span>
+            <span class="card-badge theme">${themeLabel}</span>
+            ${card.emoji ? `<div class="card-emoji">${card.emoji}</div>` : ""}
+            <div class="card-text">${escapeHtml(card.back)}</div>
+            <div class="card-hint">Tocca per tornare</div>
+          </div>
+        </div>`;
+
+      document.getElementById("cardEl").addEventListener("click", flip);
+
+      // Aggiorna contatori
+      counter.textContent = `${state.index + 1} / ${total}`;
+      const pct = Math.round(((state.index + 1) / total) * 100);
+      pctEl.textContent = `${pct}%`;
+      fillEl.style.width = `${pct}%`;
+
+      // Statistiche
+      statsEl.textContent =
+        `✓ ${state.known.size} sapute · ✗ ${state.review.size} da rivedere · Totale filtrate: ${total}`;
+
+      // Stato bottoni
+      prevBtn.disabled = state.index === 0;
+      nextBtn.disabled = state.index === total - 1;
+      flipBtn.textContent = state.flipped ? "Mostra fronte" : "Gira";
+    }
+
+    // ---------- AZIONI ----------
+    function flip() {
+      state.flipped = !state.flipped;
+      render();
+      // Pronuncia automatica del retro quando si gira
+      if (state.flipped) speakCurrent();
+    }
+
+    function next() {
+      if (state.index < state.cards.length - 1) {
+        state.index++;
+        state.flipped = false;
+        render();
+      }
+    }
+
+    function prev() {
+      if (state.index > 0) {
+        state.index--;
+        state.flipped = false;
+        render();
+      }
+    }
+
+    function markKnown() {
+      const card = state.cards[state.index];
+      if (!card) return;
+      state.known.add(card.front);
+      state.review.delete(card.front);
+      next();
+    }
+
+    function markReview() {
+      const card = state.cards[state.index];
+      if (!card) return;
+      state.review.add(card.front);
+      state.known.delete(card.front);
+      next();
+    }
+
+    // ---------- SPEECH (pronuncia) ----------
+    function speakCurrent() {
+      const card = state.cards[state.index];
+      if (!card || !window.speechSynthesis) return;
+      const deck = DECKS.find((d) => d.id === state.deckId);
+      const lang = deck?.lang || "en-US";
+      const utter = new SpeechSynthesisUtterance(card.back);
+      utter.lang = lang;
+      utter.rate = 0.9;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
+    }
+
+    // ---------- UTILITY ----------
+    function setButtonsDisabled(disabled) {
+      [prevBtn, nextBtn, flipBtn, knowBtn, reviewBtn].forEach((b) => {
+        b.disabled = disabled;
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    // ---------- EVENTI ----------
+    deckSel.addEventListener("change", () => {
+      state.deckId = deckSel.value;
+      state.theme = "";
+      state.level = "";
+      populateFilters();
+      rebuildCards();
+    });
+
+    themeSel.addEventListener("change", () => {
+      state.theme = themeSel.value;
+      rebuildCards();
+    });
+
+    levelSel.addEventListener("change", () => {
+      state.level = levelSel.value;
+      rebuildCards();
+    });
+
+    nextBtn.addEventListener("click", next);
+    prevBtn.addEventListener("click", prev);
+    flipBtn.addEventListener("click", flip);
+    knowBtn.addEventListener("click", markKnown);
+    reviewBtn.addEventListener("click", markReview);
+
+    // Tastiera: frecce + spazio
+    document.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "SELECT") return;
+      if (e.key === "ArrowRight") next();
+      else if (e.key === "ArrowLeft") prev();
+      else if (e.key === " ") { e.preventDefault(); flip(); }
+    });
+
+    // ---------- BOOT ----------
+    populateDecks();
+    populateFilters();
+    rebuildCards();
+
+  })();
+  </script>
 </body>
 </html>
