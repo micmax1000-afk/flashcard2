@@ -13,16 +13,14 @@
 
   <title>Flashcards — Ripetizione dilazionata</title>
 
-  <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/public/icons/icon-192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/public/icons/icon-512.png" />
-  <link rel="apple-touch-icon" href="/public/icons/apple-touch-icon.png" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="./public/icons/icon.svg" />
 
-  <link rel="stylesheet" href="/src/styles/tokens.css" />
-  <link rel="stylesheet" href="/src/styles/base.css" />
-  <link rel="stylesheet" href="/src/styles/layout.css" />
-  <link rel="stylesheet" href="/src/styles/components.css" />
-  <link rel="stylesheet" href="/src/styles/views.css" />
+  <link rel="stylesheet" href="./src/styles/tokens.css" />
+  <link rel="stylesheet" href="./src/styles/base.css" />
+  <link rel="stylesheet" href="./src/styles/layout.css" />
+  <link rel="stylesheet" href="./src/styles/components.css" />
+  <link rel="stylesheet" href="./src/styles/views.css" />
 </head>
 <body>
   <a class="skip-link" href="#main">Salta al contenuto</a>
@@ -38,13 +36,7 @@
         <a href="#/settings" data-route>Impostazioni</a>
       </nav>
 
-      <button
-        type="button"
-        id="theme-toggle"
-        class="btn-icon"
-        aria-label="Cambia tema chiaro/scuro"
-        title="Cambia tema"
-      >
+      <button type="button" id="theme-toggle" class="btn-icon" aria-label="Cambia tema chiaro/scuro" title="Cambia tema">
         🌓
       </button>
     </div>
@@ -52,14 +44,11 @@
 
   <main id="main" class="app-main" tabindex="-1" aria-live="polite"></main>
 
-  <!-- ===================== Template: HOME ===================== -->
   <template id="view-home">
     <section class="view view--home" aria-labelledby="home-title">
       <h2 id="home-title">Pronto a studiare?</h2>
       <p class="muted">Carte in scadenza oggi e nuove carte da imparare.</p>
-
       <div class="home-summary" id="home-summary"></div>
-
       <div class="home-actions">
         <a href="#/study" class="btn btn-primary">Inizia sessione</a>
         <a href="#/quiz" class="btn">Quiz</a>
@@ -67,27 +56,16 @@
     </section>
   </template>
 
-  <!-- ===================== Template: STUDY ===================== -->
   <template id="view-study">
     <section class="view view--study" aria-label="Sessione di studio">
       <div class="study-header">
         <progress id="study-progress" value="0" max="1" aria-label="Avanzamento sessione"></progress>
-        <button
-          type="button"
-          id="study-exit"
-          class="btn-icon"
-          aria-label="Esci dalla sessione"
-          title="Esci"
-        >
-          ✕
-        </button>
+        <button type="button" id="study-exit" class="btn-icon" aria-label="Esci dalla sessione" title="Esci">✕</button>
       </div>
-
       <div id="study-card" class="card-slot" aria-live="polite"></div>
     </section>
   </template>
 
-  <!-- ===================== Template: QUIZ ===================== -->
   <template id="view-quiz">
     <section class="view view--quiz" aria-labelledby="quiz-title">
       <h2 id="quiz-title">Quiz</h2>
@@ -95,7 +73,6 @@
     </section>
   </template>
 
-  <!-- ===================== Template: STATS ===================== -->
   <template id="view-stats">
     <section class="view view--stats" aria-labelledby="stats-title">
       <h2 id="stats-title">Statistiche</h2>
@@ -103,7 +80,6 @@
     </section>
   </template>
 
-  <!-- ===================== Template: DECKS ===================== -->
   <template id="view-decks">
     <section class="view view--decks" aria-labelledby="decks-title">
       <h2 id="decks-title">Mazzi</h2>
@@ -111,7 +87,6 @@
     </section>
   </template>
 
-  <!-- ===================== Template: SETTINGS ===================== -->
   <template id="view-settings">
     <section class="view view--settings" aria-labelledby="settings-title">
       <h2 id="settings-title">Impostazioni</h2>
@@ -119,14 +94,6 @@
     </section>
   </template>
 
-  <!-- ===================== Script applicativo ===================== -->
-  <script type="module" src="/src/main.js"></script>
-
-  <!-- Fallback per browser senza ES modules -->
-  <noscript>
-    <p style="padding: 1rem; text-align: center;">
-      Questa app richiede JavaScript abilitato per funzionare.
-    </p>
-  </noscript>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>

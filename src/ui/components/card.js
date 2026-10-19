@@ -10,7 +10,7 @@ export function createCard({ card, onAnswer, onExit, showBack = false }) {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = lang;
-      u.rate = 0.9; // Velocità leggermente rallentata per lo studio
+      u.rate = 0.9;
       window.speechSynthesis.speak(u);
     }
   };
@@ -27,21 +27,21 @@ export function createCard({ card, onAnswer, onExit, showBack = false }) {
     }
   }, "🔊");
 
-  // Fronte (es. Italiano)
+  // NOTA: Cambia "it-IT" e "en-US" se il fronte/retro della tua lingua è diverso
   const frontEl = el("div", { class: "flashcard__face flashcard__face--front" },
     el("span", { class: "flashcard__lang", text: "Fronte" }),
     el("p", { class: "flashcard__text", text: card.front }),
-    audioBtn(card.front, "it-IT") // Cambia in "en-US" se il fronte è in inglese
+    audioBtn(card.front, "it-IT") 
   );
 
-  // Retro (es. Inglese)
   const backEl = el("div", { class: "flashcard__face flashcard__face--back" },
     el("span", { class: "flashcard__lang", text: "Retro" }),
     el("p", { class: "flashcard__text", text: card.back }),
-    audioBtn(card.back, "en-US") // Cambia in "it-IT" se il retro è in italiano
+    audioBtn(card.back, "en-US")
   );
 
   const inner = el("div", { class: "flashcard__inner" }, frontEl, backEl);
+
   const revealBtn = el("button", {
       type: "button",
       class: "btn btn-primary flashcard__reveal",

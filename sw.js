@@ -3,34 +3,32 @@ const STATIC_CACHE = `flashcards-static-${VERSION}`;
 const RUNTIME_CACHE = `flashcards-runtime-${VERSION}`;
 
 const PRECACHE = [
-  "/",
-  "/index.html",
-  "/manifest.webmanifest",
-  "/src/main.js",
-  "/src/core/config.js",
-  "/src/core/events.js",
-  "/src/core/state.js",
-  "/src/srs/scheduler.js",
-  "/src/srs/queue.js",
-  "/src/storage/db.js",
-  "/src/storage/schema.js",
-  "/src/storage/repository.js",
-  "/src/storage/backup.js",
-  "/src/ui/dom.js",
-  "/src/ui/router.js",
-  "/src/ui/theme.js",
-  "/src/ui/toast.js",
-  "/src/ui/dialog.js",
-  "/src/ui/components/card.js",
-  "/src/ui/components/progress.js",
-  "/src/ui/components/chart.js",
-  "/src/styles/tokens.css",
-  "/src/styles/base.css",
-  "/src/styles/layout.css",
-  "/src/styles/components.css",
-  "/src/styles/views.css",
-  "/public/icons/icon-192.png",
-  "/public/icons/icon-512.png",
+  "./",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./src/main.js",
+  "./src/core/config.js",
+  "./src/core/events.js",
+  "./src/core/state.js",
+  "./src/srs/scheduler.js",
+  "./src/srs/queue.js",
+  "./src/storage/db.js",
+  "./src/storage/schema.js",
+  "./src/storage/repository.js",
+  "./src/storage/backup.js",
+  "./src/ui/dom.js",
+  "./src/ui/router.js",
+  "./src/ui/theme.js",
+  "./src/ui/toast.js",
+  "./src/ui/dialog.js",
+  "./src/ui/components/card.js",
+  "./src/ui/components/progress.js",
+  "./src/ui/components/chart.js",
+  "./src/styles/tokens.css",
+  "./src/styles/base.css",
+  "./src/styles/layout.css",
+  "./src/styles/components.css",
+  "./src/styles/views.css"
 ];
 
 self.addEventListener("install", (event) => {
@@ -68,7 +66,6 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Navigazione: network-first con fallback alla cache
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -78,13 +75,12 @@ self.addEventListener("fetch", (event) => {
           return res;
         })
         .catch(() =>
-          caches.match(request).then((r) => r || caches.match("/index.html")),
+          caches.match(request).then((r) => r || caches.match("./index.html")),
         ),
     );
     return;
   }
 
-  // Asset statici: cache-first con stale-while-revalidate
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) {
@@ -97,13 +93,13 @@ self.addEventListener("fetch", (event) => {
       }
       return fetch(request)
         .then((res) => {
-          if (res.ok && url.pathname.startsWith("/src/")) {
+          if (res.ok && url.pathname.includes("/src/")) {
             const copy = res.clone();
             caches.open(STATIC_CACHE).then((c) => c.put(request, copy));
           }
           return res;
         })
-        .catch(() => caches.match("/index.html"));
+        .catch(() => caches.match("./index.html"));
     }),
   );
 });
