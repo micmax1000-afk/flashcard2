@@ -6,7 +6,6 @@
   <title>Flashcard – Impara le lingue</title>
 
   <style>
-    /* ---------- RESET + TEMA ---------- */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -18,6 +17,7 @@
       --accent-dark: #2563eb;
       --success: #10b981;
       --danger: #ef4444;
+      --warn: #f59e0b;
       --border: #e5e7eb;
       --shadow: 0 4px 16px rgba(0,0,0,.08);
       --radius: 16px;
@@ -34,110 +34,80 @@
       align-items: center;
     }
 
-    header {
-      width: 100%;
-      max-width: 720px;
-      margin-bottom: 16px;
-      text-align: center;
-    }
-    header h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    header p {
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
+    header { width: 100%; max-width: 720px; margin-bottom: 16px; text-align: center; }
+    header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+    header p  { font-size: 0.85rem; color: var(--muted); }
 
     /* ---------- CONTROLLI ---------- */
     .controls {
-      width: 100%;
-      max-width: 720px;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 12px;
+      width: 100%; max-width: 720px;
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px; margin-bottom: 10px;
     }
-    @media (max-width: 560px) {
-      .controls { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 560px) { .controls { grid-template-columns: 1fr; } }
     .controls label {
-      display: block;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: .05em;
-      color: var(--muted);
-      margin-bottom: 4px;
+      display: block; font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--muted); margin-bottom: 4px;
     }
     .controls select {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--card-bg);
-      font-size: 0.9rem;
-      color: var(--text);
-      cursor: pointer;
+      width: 100%; padding: 10px 12px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--card-bg);
+      font-size: 0.9rem; color: var(--text); cursor: pointer;
     }
     .controls select:focus { outline: 2px solid var(--accent); }
 
-    /* ---------- BARRA PROGRESSO ---------- */
-    .progress {
-      width: 100%;
-      max-width: 720px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
+    /* ---------- FILTRI EXTRA ---------- */
+    .extras {
+      width: 100%; max-width: 720px;
+      display: flex; flex-wrap: wrap; gap: 12px;
+      align-items: center; margin-bottom: 12px;
+      padding: 10px 12px; background: var(--card-bg);
+      border: 1px solid var(--border); border-radius: 12px;
       font-size: 0.85rem;
-      color: var(--muted);
+    }
+    .extras label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+    .extras input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+    .extras .reset-btn {
+      margin-left: auto; padding: 6px 12px; border-radius: 8px;
+      border: 1px solid var(--border); background: transparent;
+      font-size: 0.8rem; color: var(--muted); cursor: pointer;
+    }
+    .extras .reset-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+    /* ---------- PROGRESSO ---------- */
+    .progress {
+      width: 100%; max-width: 720px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 12px; font-size: 0.85rem; color: var(--muted);
     }
     .progress-bar {
-      flex: 1;
-      height: 8px;
-      background: var(--border);
-      border-radius: 4px;
-      overflow: hidden;
+      flex: 1; height: 8px; background: var(--border);
+      border-radius: 4px; overflow: hidden;
     }
     .progress-bar > div {
       height: 100%;
       background: linear-gradient(90deg, var(--accent), var(--accent-dark));
-      width: 0%;
-      transition: width .3s ease;
+      width: 0%; transition: width .3s ease;
     }
 
     /* ---------- CARD ---------- */
     .card-wrap {
-      width: 100%;
-      max-width: 720px;
-      perspective: 1200px;
-      margin-bottom: 16px;
+      width: 100%; max-width: 720px;
+      perspective: 1200px; margin-bottom: 16px;
     }
-
     .card {
-      position: relative;
-      width: 100%;
-      min-height: 340px;
-      cursor: pointer;
-      transform-style: preserve-3d;
+      position: relative; width: 100%; min-height: 340px;
+      cursor: pointer; transform-style: preserve-3d;
       transition: transform .5s cubic-bezier(.4,.0,.2,1);
     }
     .card.flipped { transform: rotateY(180deg); }
 
     .card-face {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 24px;
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      backface-visibility: hidden;
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px; padding: 24px;
+      background: var(--card-bg); border-radius: var(--radius);
+      box-shadow: var(--shadow); backface-visibility: hidden;
       border: 1px solid var(--border);
     }
     .card-back { transform: rotateY(180deg); }
@@ -145,46 +115,37 @@
     .card-emoji { font-size: 3rem; line-height: 1; }
     .card-text  { font-size: 2rem; font-weight: 700; text-align: center; }
     .card-phon  { font-size: 1rem; color: var(--muted); font-style: italic; }
+
     .card-badge {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .05em;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: var(--accent);
-      color: #fff;
+      position: absolute; top: 12px; left: 12px;
+      font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .05em; padding: 4px 10px; border-radius: 999px;
+      background: var(--accent); color: #fff;
     }
     .card-badge.theme { left: auto; right: 12px; background: var(--muted); }
+    .card-badge.box {
+      top: auto; bottom: 12px; left: 12px;
+      background: var(--border); color: var(--muted);
+      font-size: 0.65rem;
+    }
+    .card-badge.box.active { background: var(--success); color: #fff; }
 
     .card-hint {
-      position: absolute;
-      bottom: 12px;
-      font-size: 0.75rem;
-      color: var(--muted);
+      position: absolute; bottom: 12px; right: 12px;
+      font-size: 0.75rem; color: var(--muted);
     }
 
     /* ---------- AZIONI ---------- */
     .actions {
-      width: 100%;
-      max-width: 720px;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
+      width: 100%; max-width: 720px;
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
     }
+    .actions.secondary { margin-top: 8px; grid-template-columns: 1fr 1fr; }
+
     .btn {
-      padding: 14px;
-      border: none;
-      border-radius: 12px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform .1s ease, background .2s ease;
-      background: var(--card-bg);
-      color: var(--text);
+      padding: 14px; border-radius: 12px; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; transition: transform .1s ease, background .2s ease;
+      background: var(--card-bg); color: var(--text);
       border: 1px solid var(--border);
     }
     .btn:hover  { transform: translateY(-1px); }
@@ -197,23 +158,16 @@
 
     /* ---------- EMPTY STATE ---------- */
     .empty {
-      width: 100%;
-      max-width: 720px;
-      padding: 40px 20px;
-      text-align: center;
-      color: var(--muted);
-      background: var(--card-bg);
-      border-radius: var(--radius);
+      width: 100%; max-width: 720px; padding: 40px 20px;
+      text-align: center; color: var(--muted);
+      background: var(--card-bg); border-radius: var(--radius);
       border: 1px dashed var(--border);
     }
     .empty h2 { font-size: 1.1rem; margin-bottom: 8px; color: var(--text); }
 
-    /* ---------- FOOTER ---------- */
     footer {
-      margin-top: 24px;
-      font-size: 0.75rem;
-      color: var(--muted);
-      text-align: center;
+      margin-top: 24px; font-size: 0.75rem; color: var(--muted);
+      text-align: center; line-height: 1.6;
     }
   </style>
 </head>
@@ -221,7 +175,7 @@
 
   <header>
     <h1>🃏 Flashcard</h1>
-    <p>Impara le lingue — tema e difficoltà</p>
+    <p>Impara le lingue — tema, difficoltà e ripetizione spaziata</p>
   </header>
 
   <!-- Selettori -->
@@ -232,16 +186,27 @@
     </div>
     <div>
       <label for="themeSelect">Tema</label>
-      <select id="themeSelect">
-        <option value="">Tutti i temi</option>
-      </select>
+      <select id="themeSelect"><option value="">Tutti i temi</option></select>
     </div>
     <div>
       <label for="levelSelect">Difficoltà</label>
-      <select id="levelSelect">
-        <option value="">Tutti i livelli</option>
-      </select>
+      <select id="levelSelect"><option value="">Tutti i livelli</option></select>
     </div>
+  </div>
+
+  <!-- Filtri extra + reset -->
+  <div class="extras">
+    <label>
+      <input type="checkbox" id="reviewOnly" />
+      🔴 Solo da rivedere
+    </label>
+    <label>
+      <input type="checkbox" id="dueOnly" />
+      ⏰ Solo in scadenza (SRS)
+    </label>
+    <button class="reset-btn" id="resetBtn" title="Azzera progressi del mazzo corrente">
+      ↺ Reset mazzo
+    </button>
   </div>
 
   <!-- Progresso -->
@@ -260,21 +225,19 @@
     <button id="flipBtn" class="btn primary">Gira</button>
     <button id="nextBtn" class="btn">Avanti →</button>
   </div>
-  <div class="actions" style="margin-top:8px; grid-template-columns: 1fr 1fr;">
+  <div class="actions secondary">
     <button id="knowBtn"   class="btn success">✓ Lo sapevo</button>
     <button id="reviewBtn" class="btn danger">✗ Da rivedere</button>
   </div>
 
-  <footer>
-    <span id="stats">—</span>
-  </footer>
+  <footer><span id="stats">—</span></footer>
 
-  <!-- =====================================================================
-       ORDINE DI CARICAMENTO OBBLIGATORIO
-       1) data.js   → definisce DECKS
-       2) meta.js   → arricchisce DECKS con theme/level + aggiunge carte EN
-       3) script app (sotto) → usa filterCards, THEMES, LEVELS
-       ===================================================================== -->
+  <!-- ============================================================
+       ORDINE DI CARICAMENTO OBBLIGATORIO:
+       1) data.js  → DECKS
+       2) meta.js  → arricchisce con theme/level + carte EN
+       3) app qui sotto → usa filterCards, THEMES, LEVELS
+       ============================================================ -->
   <script src="data.js"></script>
   <script src="meta.js"></script>
 
@@ -282,10 +245,106 @@
   (function () {
     "use strict";
 
-    // ---------- RIFERIMENTI DOM ----------
+    // ================================================================
+    // COSTANTI
+    // ================================================================
+    const STORAGE_KEY = "flashcard-progress-v2";
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    // Intervalli SRS (in giorni) per box 1..5
+    const SRS_DAYS = [null, 1, 3, 7, 14, 30];
+
+    // ================================================================
+    // STATO
+    // ================================================================
+    const state = {
+      deckId: null,
+      theme: "",
+      level: "",
+      reviewOnly: false,
+      dueOnly: false,
+      cards: [],        // carte filtrate correnti
+      index: 0,
+      flipped: false,
+      // SRS: chiave "deckId|front" → { box, due }
+      srs: {},
+    };
+
+    // ================================================================
+    // PERSISTENZA
+    // ================================================================
+    function loadProgress() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return {};
+        const data = JSON.parse(raw);
+        return data.srs || {};
+      } catch (err) {
+        console.warn("[app] Impossibile leggere localStorage:", err);
+        return {};
+      }
+    }
+
+    function saveProgress() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ srs: state.srs }));
+      } catch (err) {
+        console.warn("[app] Impossibile scrivere localStorage:", err);
+      }
+    }
+
+    // ================================================================
+    // SRS — helpers
+    // ================================================================
+    function srsKey(deckId, front) { return `${deckId}|${front}`; }
+
+    function getSrs(front) {
+      return state.srs[srsKey(state.deckId, front)] || null;
+    }
+
+    function isKnown(front) {
+      const s = getSrs(front);
+      return !!s && s.box >= 2;
+    }
+
+    function isReview(front) {
+      const s = getSrs(front);
+      return !!s && s.box === 1;
+    }
+
+    function isDue(front) {
+      const s = getSrs(front);
+      return !s || s.due <= Date.now();
+    }
+
+    function markKnown(front) {
+      const k = srsKey(state.deckId, front);
+      const cur = state.srs[k];
+      const box = Math.min((cur?.box || 0) + 1, 5);
+      state.srs[k] = { box, due: Date.now() + SRS_DAYS[box] * DAY_MS };
+    }
+
+    function markReview(front) {
+      const k = srsKey(state.deckId, front);
+      state.srs[k] = { box: 1, due: Date.now() + SRS_DAYS[1] * DAY_MS };
+    }
+
+    function resetDeck() {
+      const prefix = `${state.deckId}|`;
+      for (const k of Object.keys(state.srs)) {
+        if (k.startsWith(prefix)) delete state.srs[k];
+      }
+      saveProgress();
+    }
+
+    // ================================================================
+    // RIFERIMENTI DOM
+    // ================================================================
     const deckSel    = document.getElementById("deckSelect");
     const themeSel   = document.getElementById("themeSelect");
     const levelSel   = document.getElementById("levelSelect");
+    const reviewChk  = document.getElementById("reviewOnly");
+    const dueChk     = document.getElementById("dueOnly");
+    const resetBtn   = document.getElementById("resetBtn");
     const cardWrap   = document.getElementById("cardWrap");
     const prevBtn    = document.getElementById("prevBtn");
     const nextBtn    = document.getElementById("nextBtn");
@@ -297,19 +356,9 @@
     const fillEl     = document.getElementById("progressFill");
     const statsEl    = document.getElementById("stats");
 
-    // ---------- STATO ----------
-    const state = {
-      deckId: null,
-      theme: "",
-      level: "",
-      cards: [],        // carte filtrate
-      index: 0,
-      flipped: false,
-      known: new Set(), // front delle carte "lo sapevo"
-      review: new Set(),// front delle carte "da rivedere"
-    };
-
-    // ---------- INIT: popola i mazzi ----------
+    // ================================================================
+    // POPOLAMENTO UI
+    // ================================================================
     function populateDecks() {
       deckSel.innerHTML = "";
       for (const deck of DECKS) {
@@ -322,14 +371,12 @@
       deckSel.value = state.deckId;
     }
 
-    // ---------- POPOLA TEMI E LIVELLI in base al mazzo ----------
     function populateFilters() {
       const deck = DECKS.find((d) => d.id === state.deckId);
       if (!deck) return;
 
       themeSel.innerHTML = '<option value="">Tutti i temi</option>';
-      const themes = getThemesForCards(deck.cards);
-      for (const t of themes) {
+      for (const t of getThemesForCards(deck.cards)) {
         const opt = document.createElement("option");
         opt.value = t.id;
         opt.textContent = `${t.emoji} ${t.name}`;
@@ -337,8 +384,7 @@
       }
 
       levelSel.innerHTML = '<option value="">Tutti i livelli</option>';
-      const levels = getLevelsForCards(deck.cards);
-      for (const l of levels) {
+      for (const l of getLevelsForCards(deck.cards)) {
         const opt = document.createElement("option");
         opt.value = l.id;
         opt.textContent = l.name;
@@ -347,49 +393,58 @@
 
       themeSel.value = "";
       levelSel.value = "";
+      state.theme = "";
+      state.level = "";
     }
 
-    // ---------- FILTRA E RICOSTRUISCI LA LISTA CARTE ----------
-    function rebuildCards() {
-      const deck = DECKS.find((d) => d.id === state.deckId);
-      if (!deck) return;
-
-      state.cards = filterCards(deck.cards, {
+    // ================================================================
+    // FILTRI
+    // ================================================================
+    function applyFilters(cards) {
+      let result = filterCards(cards, {
         theme: state.theme || undefined,
         level: state.level || undefined,
       });
+      if (state.reviewOnly) result = result.filter((c) => isReview(c.front));
+      if (state.dueOnly)    result = result.filter((c) => isDue(c.front));
+      return result;
+    }
 
-      // Reset navigazione
-      state.index = 0;
-      state.flipped = false;
-      state.known.clear();
-      state.review.clear();
-
+    function rebuildCards({ resetIndex = true } = {}) {
+      const deck = DECKS.find((d) => d.id === state.deckId);
+      if (!deck) return;
+      state.cards = applyFilters(deck.cards);
+      if (resetIndex) {
+        state.index = 0;
+        state.flipped = false;
+      } else {
+        if (state.index >= state.cards.length) state.index = state.cards.length - 1;
+        if (state.index < 0) state.index = 0;
+      }
       render();
     }
 
-    // ---------- RENDER CARD ----------
+    // ================================================================
+    // RENDER
+    // ================================================================
     function render() {
       const total = state.cards.length;
 
-      // Nessuna carta
       if (total === 0) {
         cardWrap.innerHTML = `
           <div class="empty">
             <h2>Nessuna carta trovata</h2>
-            <p>Prova a cambiare tema o difficoltà.</p>
+            <p>Prova a cambiare tema, difficoltà o a togliere i filtri "da rivedere"/"in scadenza".</p>
           </div>`;
         counter.textContent = "0 / 0";
         pctEl.textContent = "0%";
         fillEl.style.width = "0%";
-        statsEl.textContent = "—";
         setButtonsDisabled(true);
+        updateStats();
         return;
       }
 
       setButtonsDisabled(false);
-
-      // Clamp index
       if (state.index < 0) state.index = 0;
       if (state.index >= total) state.index = total - 1;
 
@@ -397,19 +452,26 @@
       const theme = THEMES.find((t) => t.id === card.theme);
       const themeLabel = theme ? `${theme.emoji} ${theme.name}` : card.theme || "";
 
+      const s = getSrs(card.front);
+      const box = s?.box || 0;
+      const boxLabel = box === 0 ? "Nuova" : box >= 5 ? "Box 5 ⭐" : `Box ${box}`;
+      const dueLabel = s ? formatDue(s.due) : "Subito";
+
       cardWrap.innerHTML = `
         <div class="card ${state.flipped ? "flipped" : ""}" id="cardEl">
           <div class="card-face card-front">
             <span class="card-badge">${card.level || ""}</span>
             <span class="card-badge theme">${themeLabel}</span>
+            <span class="card-badge box ${box >= 2 ? "active" : ""}">${boxLabel} · ${dueLabel}</span>
             ${card.emoji ? `<div class="card-emoji">${card.emoji}</div>` : ""}
             <div class="card-text">${escapeHtml(card.front)}</div>
             ${card.phon ? `<div class="card-phon">${escapeHtml(card.phon)}</div>` : ""}
-            <div class="card-hint">Tocca la card per girare</div>
+            <div class="card-hint">Tocca per girare</div>
           </div>
           <div class="card-face card-back">
             <span class="card-badge">${card.level || ""}</span>
             <span class="card-badge theme">${themeLabel}</span>
+            <span class="card-badge box ${box >= 2 ? "active" : ""}">${boxLabel} · ${dueLabel}</span>
             ${card.emoji ? `<div class="card-emoji">${card.emoji}</div>` : ""}
             <div class="card-text">${escapeHtml(card.back)}</div>
             <div class="card-hint">Tocca per tornare</div>
@@ -418,27 +480,49 @@
 
       document.getElementById("cardEl").addEventListener("click", flip);
 
-      // Aggiorna contatori
       counter.textContent = `${state.index + 1} / ${total}`;
       const pct = Math.round(((state.index + 1) / total) * 100);
       pctEl.textContent = `${pct}%`;
       fillEl.style.width = `${pct}%`;
 
-      // Statistiche
-      statsEl.textContent =
-        `✓ ${state.known.size} sapute · ✗ ${state.review.size} da rivedere · Totale filtrate: ${total}`;
-
-      // Stato bottoni
       prevBtn.disabled = state.index === 0;
       nextBtn.disabled = state.index === total - 1;
       flipBtn.textContent = state.flipped ? "Mostra fronte" : "Gira";
+
+      updateStats();
     }
 
-    // ---------- AZIONI ----------
+    function updateStats() {
+      const total = state.cards.length;
+      if (!total) { statsEl.textContent = "—"; return; }
+
+      const known   = state.cards.filter((c) => isKnown(c.front)).length;
+      const review  = state.cards.filter((c) => isReview(c.front)).length;
+      const due     = state.cards.filter((c) => isDue(c.front)).length;
+      const newCnt  = state.cards.filter((c) => !getSrs(c.front)).length;
+
+      statsEl.innerHTML =
+        `📚 Filtrate: <strong>${total}</strong> · ` +
+        `🆕 Nuove: <strong>${newCnt}</strong> · ` +
+        `✅ Sapute: <strong>${known}</strong> · ` +
+        `🔴 Da rivedere: <strong>${review}</strong> · ` +
+        `⏰ In scadenza: <strong>${due}</strong>`;
+    }
+
+    function formatDue(ts) {
+      const diff = ts - Date.now();
+      if (diff <= 0) return "oggi";
+      const days = Math.ceil(diff / DAY_MS);
+      if (days === 1) return "domani";
+      return `tra ${days}g`;
+    }
+
+    // ================================================================
+    // AZIONI
+    // ================================================================
     function flip() {
       state.flipped = !state.flipped;
       render();
-      // Pronuncia automatica del retro quando si gira
       if (state.flipped) speakCurrent();
     }
 
@@ -458,23 +542,42 @@
       }
     }
 
-    function markKnown() {
+    function markAndAdvance(result) {
       const card = state.cards[state.index];
       if (!card) return;
-      state.known.add(card.front);
-      state.review.delete(card.front);
-      next();
+
+      if (result === "known")  markKnown(card.front);
+      if (result === "review") markReview(card.front);
+      saveProgress();
+
+      // Ricostruisci la lista: se il filtro corrente rimuove questa carta, resta
+      // sullo stesso indice (scivola la prossima). Altrimenti avanza.
+      const before = state.cards.length;
+      const newCards = applyFilters(DECKS.find((d) => d.id === state.deckId).cards);
+      const stillPresent = newCards.some((c) => c.front === card.front);
+
+      state.cards = newCards;
+
+      if (!stillPresent) {
+        if (state.index >= state.cards.length) state.index = state.cards.length - 1;
+        if (state.index < 0) state.index = 0;
+      } else if (state.index < state.cards.length - 1) {
+        state.index++;
+      }
+
+      state.flipped = false;
+      render();
     }
 
-    function markReview() {
-      const card = state.cards[state.index];
-      if (!card) return;
-      state.review.add(card.front);
-      state.known.delete(card.front);
-      next();
+    function doReset() {
+      if (!confirm(`Azzerare tutti i progressi del mazzo "${state.deckId}"?`)) return;
+      resetDeck();
+      rebuildCards();
     }
 
-    // ---------- SPEECH (pronuncia) ----------
+    // ================================================================
+    // SPEECH
+    // ================================================================
     function speakCurrent() {
       const card = state.cards[state.index];
       if (!card || !window.speechSynthesis) return;
@@ -487,7 +590,9 @@
       window.speechSynthesis.speak(utter);
     }
 
-    // ---------- UTILITY ----------
+    // ================================================================
+    // UTILITY
+    // ================================================================
     function setButtonsDisabled(disabled) {
       [prevBtn, nextBtn, flipBtn, knowBtn, reviewBtn].forEach((b) => {
         b.disabled = disabled;
@@ -503,11 +608,15 @@
         .replaceAll("'", "&#39;");
     }
 
-    // ---------- EVENTI ----------
+    // ================================================================
+    // EVENTI
+    // ================================================================
     deckSel.addEventListener("change", () => {
       state.deckId = deckSel.value;
-      state.theme = "";
-      state.level = "";
+      state.reviewOnly = false;
+      state.dueOnly = false;
+      reviewChk.checked = false;
+      dueChk.checked = false;
       populateFilters();
       rebuildCards();
     });
@@ -522,25 +631,38 @@
       rebuildCards();
     });
 
+    reviewChk.addEventListener("change", () => {
+      state.reviewOnly = reviewChk.checked;
+      rebuildCards();
+    });
+
+    dueChk.addEventListener("change", () => {
+      state.dueOnly = dueChk.checked;
+      rebuildCards();
+    });
+
+    resetBtn.addEventListener("click", doReset);
+
     nextBtn.addEventListener("click", next);
     prevBtn.addEventListener("click", prev);
     flipBtn.addEventListener("click", flip);
-    knowBtn.addEventListener("click", markKnown);
-    reviewBtn.addEventListener("click", markReview);
+    knowBtn.addEventListener("click", () => markAndAdvance("known"));
+    reviewBtn.addEventListener("click", () => markAndAdvance("review"));
 
-    // Tastiera: frecce + spazio
     document.addEventListener("keydown", (e) => {
-      if (e.target.tagName === "SELECT") return;
+      if (e.target.tagName === "SELECT" || e.target.tagName === "INPUT") return;
       if (e.key === "ArrowRight") next();
       else if (e.key === "ArrowLeft") prev();
       else if (e.key === " ") { e.preventDefault(); flip(); }
     });
 
-    // ---------- BOOT ----------
+    // ================================================================
+    // BOOT
+    // ================================================================
+    state.srs = loadProgress();
     populateDecks();
     populateFilters();
     rebuildCards();
-
   })();
   </script>
 </body>
