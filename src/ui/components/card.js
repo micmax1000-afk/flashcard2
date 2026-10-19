@@ -1,38 +1,52 @@
 import { el } from "../dom.js";
 import { RATING } from "../../srs/scheduler.js";
 
-/**
- * Flashcard interattiva.
- *
- * @param {object} opts
- * @param {{front:string, back:string}} opts.card
- * @param {(rating:"again"|"hard"|"good"|"easy") => void} opts.onAnswer
- * @param {(reason:"exit") => void} [opts.onExit]
- * @param {boolean} [opts.showBack=false]   per la modalità studio: parte sul fronte
- * @returns {{ node: HTMLElement, reveal: () => void, destroy: () => void }}
- */
 export function createCard({ card, onAnswer, onExit, showBack = false }) {
   let revealed = showBack;
 
+  // Funzione per l'audio (Text-to-Speech)
+  const speak = (text, lang = "en-US") => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang;
+      u.rate = 0.9; // Velocità leggermente rallentata per lo studio
+      window.speechSynthesis.speak(u);
+    }
+  };
+
+  // Pulsante audio
+  const audioBtn = (text, lang) => el("button", {
+    type: "button",
+    class: "btn-icon",
+    style: "margin-top: 0.5rem; font-size: 1.5rem;",
+    "aria-label": "Ascolta pronuncia",
+    onClick: (e) => {
+      e.stopPropagation(); // Evita che cliccando l'audio si giri la carta
+      speak(text, lang);
+    }
+  }, "🔊");
+
+  // Fronte (es. Italiano)
   const frontEl = el("div", { class: "flashcard__face flashcard__face--front" },
     el("span", { class: "flashcard__lang", text: "Fronte" }),
     el("p", { class: "flashcard__text", text: card.front }),
+    audioBtn(card.front, "it-IT") // Cambia in "en-US" se il fronte è in inglese
   );
+
+  // Retro (es. Inglese)
   const backEl = el("div", { class: "flashcard__face flashcard__face--back" },
     el("span", { class: "flashcard__lang", text: "Retro" }),
     el("p", { class: "flashcard__text", text: card.back }),
+    audioBtn(card.back, "en-US") // Cambia in "it-IT" se il retro è in italiano
   );
 
   const inner = el("div", { class: "flashcard__inner" }, frontEl, backEl);
-
-  const revealBtn = el(
-    "button",
-    {
+  const revealBtn = el("button", {
       type: "button",
       class: "btn btn-primary flashcard__reveal",
       onClick: reveal,
-    },
-    "Mostra risposta",
+    }, "Mostra risposta"
   );
 
   const ratings = el(
@@ -88,7 +102,6 @@ export function createCard({ card, onAnswer, onExit, showBack = false }) {
     ratings.querySelector("button")?.focus();
   }
 
-  // scorciatoie da tastiera
   function onKey(e) {
     if (e.target.matches?.("input, textarea")) return;
     if (!revealed && (e.key === " " || e.key === "Enter")) {
@@ -111,7 +124,6 @@ export function createCard({ card, onAnswer, onExit, showBack = false }) {
     reveal,
     destroy() {
       document.removeEventListener("keydown", onKey);
-      root.remove();
     },
   };
 }
