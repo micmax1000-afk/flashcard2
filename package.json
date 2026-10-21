@@ -38,5 +38,9 @@
     "prettier": "^3.3.3",
     "serve": "^14.2.4",
     "vitest": "^2.1.5"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3"
   }
 }

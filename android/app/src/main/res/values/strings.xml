@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Flashcard</string>
+    <string name="title_activity_main">Flashcard</string>
+    <string name="package_name">com.micmax1000.flashcard</string>
+    <string name="custom_url_scheme">com.micmax1000.flashcard</string>
+</resources>
