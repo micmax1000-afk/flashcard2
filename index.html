@@ -2,1082 +2,242 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flashcard – Impara le lingue</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#3b82f6" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Flashcard</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg: #f5f7fb;
-      --card-bg: #ffffff;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --accent: #3b82f6;
-      --accent-dark: #2563eb;
-      --success: #10b981;
-      --danger: #ef4444;
-      --warn: #f59e0b;
-      --border: #e5e7eb;
-      --shadow: 0 4px 16px rgba(0,0,0,.08);
-      --radius: 16px;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    header { width: 100%; max-width: 720px; margin-bottom: 16px; text-align: center; }
-    header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
-    header p  { font-size: 0.85rem; color: var(--muted); }
-
-    .controls {
-      width: 100%; max-width: 720px;
-      display: grid; grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px; margin-bottom: 10px;
-    }
-    @media (max-width: 560px) { .controls { grid-template-columns: 1fr; } }
-    .controls label {
-      display: block; font-size: 0.7rem; text-transform: uppercase;
-      letter-spacing: .05em; color: var(--muted); margin-bottom: 4px;
-    }
-    .controls select {
-      width: 100%; padding: 10px 12px; border-radius: 10px;
-      border: 1px solid var(--border); background: var(--card-bg);
-      font-size: 0.9rem; color: var(--text); cursor: pointer;
-    }
-    .controls select:focus { outline: 2px solid var(--accent); }
-
-    .extras {
-      width: 100%; max-width: 720px;
-      display: flex; flex-wrap: wrap; gap: 10px;
-      align-items: center; margin-bottom: 12px;
-      padding: 10px 12px; background: var(--card-bg);
-      border: 1px solid var(--border); border-radius: 12px;
-      font-size: 0.85rem;
-    }
-    .extras label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-    .extras input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
-    .extras .tool-btn {
-      padding: 6px 12px; border-radius: 8px;
-      border: 1px solid var(--border); background: transparent;
-      font-size: 0.8rem; color: var(--text); cursor: pointer;
-      display: inline-flex; align-items: center; gap: 4px;
-    }
-    .extras .tool-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .extras .tool-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
-    .extras .spacer { margin-left: auto; }
-
-    /* ---------- PANNELLO VOCE ---------- */
-    .voice-panel {
-      width: 100%; max-width: 720px;
-      margin-bottom: 12px;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .voice-header {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 12px; font-size: 0.85rem;
-      cursor: pointer; user-select: none;
-    }
-    .voice-header:hover { background: var(--bg); }
-    .voice-header .badge {
-      margin-left: auto;
-      font-size: 0.7rem;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: var(--border);
-      color: var(--muted);
-      font-weight: 600;
-      max-width: 60%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .voice-header .badge.good { background: var(--success); color: #fff; }
-    .voice-header .badge.warn { background: var(--warn); color: #fff; }
-    .voice-header .chev {
-      transition: transform .2s ease;
-      font-size: 0.7rem; color: var(--muted);
-    }
-    .voice-panel.open .voice-header .chev { transform: rotate(90deg); }
-
-    .voice-body {
-      display: none;
-      padding: 0 12px 12px;
-      border-top: 1px solid var(--border);
-    }
-    .voice-panel.open .voice-body { display: block; }
-
-    .voice-row {
-      display: flex; gap: 8px; align-items: center;
-      margin-top: 10px;
-    }
-    .voice-row select {
-      flex: 1;
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--card-bg);
-      font-size: 0.85rem;
-      color: var(--text);
-    }
-    .voice-row .small-btn {
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--card-bg);
-      font-size: 0.8rem;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .voice-row .small-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .voice-row .small-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .voice-row .small-btn.primary:hover { background: var(--accent-dark); color: #fff; }
-
-    .voice-hint {
-      margin-top: 8px;
-      font-size: 0.75rem;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-    .voice-hint strong { color: var(--text); }
-
-    /* ---------- PROGRESSO ---------- */
-    .progress {
-      width: 100%; max-width: 720px;
-      display: flex; align-items: center; gap: 12px;
-      margin-bottom: 12px; font-size: 0.85rem; color: var(--muted);
-    }
-    .progress-bar {
-      flex: 1; height: 8px; background: var(--border);
-      border-radius: 4px; overflow: hidden;
-    }
-    .progress-bar > div {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent-dark));
-      width: 0%; transition: width .3s ease;
-    }
-
-    /* ---------- CARD ---------- */
-    .card-wrap {
-      width: 100%; max-width: 720px;
-      perspective: 1200px; margin-bottom: 16px;
-    }
-    .card {
-      position: relative; width: 100%; min-height: 340px;
-      cursor: pointer; transform-style: preserve-3d;
-      transition: transform .5s cubic-bezier(.4,.0,.2,1);
-    }
-    .card.flipped { transform: rotateY(180deg); }
-
-    .card-face {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 12px; padding: 24px;
-      background: var(--card-bg); border-radius: var(--radius);
-      box-shadow: var(--shadow); backface-visibility: hidden;
-      border: 1px solid var(--border);
-    }
-    .card-back { transform: rotateY(180deg); }
-
-    .card-emoji { font-size: 3rem; line-height: 1; }
-    .card-text  { font-size: 2rem; font-weight: 700; text-align: center; }
-    .card-phon  { font-size: 1rem; color: var(--muted); font-style: italic; }
-
-    .card-badge {
-      position: absolute; top: 12px; left: 12px;
-      font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
-      letter-spacing: .05em; padding: 4px 10px; border-radius: 999px;
-      background: var(--accent); color: #fff;
-    }
-    .card-badge.theme { left: auto; right: 56px; background: var(--muted); }
-    .card-badge.box {
-      top: auto; bottom: 12px; left: 12px;
-      background: var(--border); color: var(--muted);
-      font-size: 0.65rem;
-    }
-    .card-badge.box.active { background: var(--success); color: #fff; }
-
-    .card-hint {
-      position: absolute; bottom: 12px; right: 12px;
-      font-size: 0.75rem; color: var(--muted);
-    }
-
-    .card-audio {
-      position: absolute;
-      top: 10px; right: 10px;
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      background: var(--card-bg);
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem;
-      transition: background .2s ease, transform .1s ease;
-      z-index: 2;
-    }
-    .card-audio:hover { background: var(--bg); transform: scale(1.05); }
-    .card-audio:active { transform: scale(.95); }
-    .card-audio.speaking { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-    .actions {
-      width: 100%; max-width: 720px;
-      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
-    }
-    .actions.secondary { margin-top: 8px; grid-template-columns: 1fr 1fr; }
-
-    .btn {
-      padding: 14px; border-radius: 12px; font-size: 0.95rem; font-weight: 600;
-      cursor: pointer; transition: transform .1s ease, background .2s ease;
-      background: var(--card-bg); color: var(--text);
-      border: 1px solid var(--border);
-    }
-    .btn:hover  { transform: translateY(-1px); }
-    .btn:active { transform: translateY(0); }
-    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .btn.primary:hover { background: var(--accent-dark); }
-    .btn.success { background: var(--success); color: #fff; border-color: var(--success); }
-    .btn.danger  { background: var(--danger);  color: #fff; border-color: var(--danger); }
-    .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
-
-    .empty {
-      width: 100%; max-width: 720px; padding: 40px 20px;
-      text-align: center; color: var(--muted);
-      background: var(--card-bg); border-radius: var(--radius);
-      border: 1px dashed var(--border);
-    }
-    .empty h2 { font-size: 1.1rem; margin-bottom: 8px; color: var(--text); }
-
-    footer {
-      margin-top: 24px; font-size: 0.75rem; color: var(--muted);
-      text-align: center; line-height: 1.6;
-    }
-
-    .toast {
-      position: fixed;
-      bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
-      background: #1f2937; color: #fff;
-      padding: 12px 20px; border-radius: 10px;
-      font-size: 0.85rem; font-weight: 500;
-      box-shadow: 0 8px 24px rgba(0,0,0,.2);
-      opacity: 0; pointer-events: none;
-      transition: opacity .25s ease, transform .25s ease;
-      z-index: 1000;
-      max-width: 90vw;
-    }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .toast.success { background: var(--success); }
-    .toast.error   { background: var(--danger); }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#f5f7fb;--card-bg:#fff;--text:#1f2937;--muted:#6b7280;--accent:#3b82f6;--accent-dark:#2563eb;--success:#10b981;--danger:#ef4444;--border:#e5e7eb;--shadow:0 4px 16px rgba(0,0,0,.08);--radius:16px;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px)}
+    html,body{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+    .app{display:flex;flex-direction:column;height:100dvh;max-width:720px;margin:0 auto;padding-left:calc(var(--safe-left) + 8px);padding-right:calc(var(--safe-right) + 8px);padding-top:calc(var(--safe-top) + 4px);padding-bottom:calc(var(--safe-bottom) + 8px)}
+    .topbar{display:flex;align-items:center;gap:6px;padding:4px 0;flex-shrink:0}
+    .topbar button{min-width:44px;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:var(--card-bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .topbar .title{flex:1;text-align:center;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .topbar .title small{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:1px}
+    .filters{position:fixed;top:0;left:0;right:0;background:var(--card-bg);border-bottom:1px solid var(--border);padding:calc(var(--safe-top) + 14px) 12px 16px;transform:translateY(-100%);transition:transform .25s ease;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.1)}
+    .filters.open{transform:translateY(0)}
+    .filters .row{display:flex;gap:8px;margin-bottom:8px}
+    .filters .row>*{flex:1;min-width:0}
+    .filters label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px;display:block}
+    .filters select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card-bg);font-size:14px;color:var(--text);min-height:44px}
+    .filters .toggle-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+    .filters .toggle-row label{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;border:1px solid var(--border);font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer;margin:0;min-height:40px}
+    .filters .toggle-row input[type="checkbox"]{accent-color:var(--accent);width:18px;height:18px}
+    .filters .tool-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px}
+    .filters .tool-row button{padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card-bg);font-size:13px;cursor:pointer;min-height:44px}
+    .filters .tool-row button.danger{color:var(--danger);border-color:var(--danger)}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:99}
+    .overlay.open{opacity:1;pointer-events:auto}
+    .main{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px 0;perspective:1200px}
+    .card{position:relative;width:100%;height:100%;cursor:pointer;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,.0,.2,1)}
+    .card.flipped{transform:rotateY(180deg)}
+    .card-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);backface-visibility:hidden;border:1px solid var(--border)}
+    .card-back{transform:rotateY(180deg)}
+    .card-emoji{font-size:clamp(2rem,8vw,3.5rem);line-height:1}
+    .card-text{font-size:clamp(1.5rem,6vw,2.5rem);font-weight:700;text-align:center;line-height:1.15;word-break:break-word;overflow-wrap:anywhere}
+    .card-phon{font-size:clamp(.85rem,3.5vw,1.1rem);color:var(--muted);font-style:italic}
+    .card-badge{position:absolute;top:10px;left:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:4px 8px;border-radius:999px;background:var(--accent);color:#fff}
+    .card-badge.theme{left:auto;right:52px;background:var(--muted);max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .card-badge.box{top:auto;bottom:10px;left:10px;background:var(--border);color:var(--muted);font-size:9px}
+    .card-badge.box.active{background:var(--success);color:#fff}
+    .card-audio{position:absolute;top:6px;right:6px;width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--card-bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:2}
+    .card-audio.speaking{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .card-hint{position:absolute;bottom:10px;right:10px;font-size:10px;color:var(--muted)}
+    .bottombar{flex-shrink:0;padding:6px 0 4px;display:flex;flex-direction:column;gap:6px}
+    .progress-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+    .progress-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+    .progress-bar>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-dark));width:0;transition:width .3s ease}
+    .btn-row{display:grid;gap:6px}
+    .btn-row.nav{grid-template-columns:1fr 1.3fr 1fr}
+    .btn-row.rate{grid-template-columns:1fr 1fr}
+    .btn{padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;background:var(--card-bg);color:var(--text);border:1px solid var(--border);min-height:52px;transition:transform .1s;display:flex;align-items:center;justify-content:center}
+    .btn:active{transform:scale(.97)}
+    .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .btn.success{background:var(--success);color:#fff;border-color:var(--success)}
+    .btn.danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+    .btn:disabled{opacity:.4;cursor:not-allowed}
+    .voice-sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card-bg);border-top-left-radius:20px;border-top-right-radius:20px;padding:12px 16px calc(var(--safe-bottom) + 16px);transform:translateY(100%);transition:transform .3s ease;z-index:101;box-shadow:0 -8px 24px rgba(0,0,0,.15);max-width:720px;margin:0 auto}
+    .voice-sheet.open{transform:translateY(0)}
+    .voice-sheet .grabber{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 12px}
+    .voice-sheet h3{font-size:14px;margin-bottom:10px}
+    .voice-sheet select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card-bg);font-size:14px;margin-bottom:8px;min-height:48px}
+    .voice-sheet .actions-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+    .voice-sheet .actions-row button{padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card-bg);font-size:14px;cursor:pointer;min-height:48px}
+    .voice-sheet .hint{font-size:12px;color:var(--muted);line-height:1.5}
+    .empty{width:100%;padding:40px 20px;text-align:center;color:var(--muted);background:var(--card-bg);border-radius:var(--radius);border:1px dashed var(--border)}
+    .empty h2{font-size:16px;margin-bottom:8px;color:var(--text)}
+    .toast{position:fixed;bottom:calc(var(--safe-bottom) + 100px);left:50%;transform:translateX(-50%) translateY(20px);background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:200;max-width:90vw;text-align:center}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .toast.success{background:var(--success)}
+    .toast.error{background:var(--danger)}
+    @media (max-height:600px){.card-text{font-size:clamp(1.25rem,5vw,2rem)}.card-emoji{font-size:clamp(1.5rem,6vw,2.5rem)}}
   </style>
 </head>
 <body>
-
-  <header>
-    <h1>🃏 Flashcard</h1>
-    <p>Impara le lingue — tema, difficoltà, ripetizione spaziata</p>
-  </header>
-
-  <!-- Selettori principali -->
-  <div class="controls">
-    <div>
-      <label for="deckSelect">Mazzo</label>
-      <select id="deckSelect"></select>
+  <div class="app">
+    <div class="topbar">
+      <button id="filtersBtn" aria-label="Filtri">☰</button>
+      <div class="title">
+        <span id="titleDeck">Flashcard</span>
+        <small id="titleStats">—</small>
+      </div>
+      <button id="voiceBtn" aria-label="Voce">🎙️</button>
     </div>
-    <div>
-      <label for="themeSelect">Tema</label>
-      <select id="themeSelect"><option value="">Tutti i temi</option></select>
-    </div>
-    <div>
-      <label for="levelSelect">Difficoltà</label>
-      <select id="levelSelect"><option value="">Tutti i livelli</option></select>
+    <div class="main"><div id="cardWrap" style="width:100%;height:100%"></div></div>
+    <div class="bottombar">
+      <div class="progress-row">
+        <span id="counter">0 / 0</span>
+        <div class="progress-bar"><div id="progressFill"></div></div>
+        <span id="pct">0%</span>
+      </div>
+      <div class="btn-row nav">
+        <button id="prevBtn" class="btn">←</button>
+        <button id="flipBtn" class="btn primary">Gira</button>
+        <button id="nextBtn" class="btn">→</button>
+      </div>
+      <div class="btn-row rate">
+        <button id="knowBtn" class="btn success">✓ Lo sapevo</button>
+        <button id="reviewBtn" class="btn danger">✗ Da rivedere</button>
+      </div>
     </div>
   </div>
 
-  <!-- Filtri + strumenti -->
-  <div class="extras">
-    <label>
-      <input type="checkbox" id="reviewOnly" />
-      🔴 Solo da rivedere
-    </label>
-    <label>
-      <input type="checkbox" id="dueOnly" />
-      ⏰ Solo in scadenza
-    </label>
-    <label>
-      <input type="checkbox" id="autoSpeak" checked />
-      🔊 Auto-pronuncia
-    </label>
-    <span class="spacer"></span>
-    <button class="tool-btn" id="exportBtn" title="Esporta progressi come JSON">📤 Esporta</button>
-    <button class="tool-btn" id="importBtn" title="Importa progressi da JSON">📥 Importa</button>
-    <button class="tool-btn danger" id="resetBtn" title="Azzera progressi del mazzo corrente">↺ Reset</button>
+  <div class="overlay" id="overlay"></div>
+
+  <div class="filters" id="filtersPanel">
+    <div class="row">
+      <div><label for="deckSelect">Mazzo</label><select id="deckSelect"></select></div>
+    </div>
+    <div class="row">
+      <div><label for="themeSelect">Tema</label><select id="themeSelect"><option value="">Tutti i temi</option></select></div>
+      <div><label for="levelSelect">Livello</label><select id="levelSelect"><option value="">Tutti i livelli</option></select></div>
+    </div>
+    <div class="toggle-row">
+      <label><input type="checkbox" id="reviewOnly" /> 🔴 Solo da rivedere</label>
+      <label><input type="checkbox" id="dueOnly" /> ⏰ In scadenza</label>
+      <label><input type="checkbox" id="autoSpeak" checked /> 🔊 Auto-pronuncia</label>
+    </div>
+    <div class="tool-row">
+      <button id="exportBtn">📤 Esporta</button>
+      <button id="importBtn">📥 Importa</button>
+      <button id="resetBtn" class="danger">↺ Reset</button>
+    </div>
     <input type="file" id="importFile" accept="application/json,.json" hidden />
   </div>
 
-  <!-- Pannello voce TTS -->
-  <div class="voice-panel" id="voicePanel">
-    <div class="voice-header" id="voiceHeader">
-      <span class="chev">▶</span>
-      <span>🎙️ Voce TTS</span>
-      <span class="badge" id="voiceBadge">Caricamento…</span>
+  <div class="voice-sheet" id="voiceSheet">
+    <div class="grabber"></div>
+    <h3>🎙️ Voce TTS</h3>
+    <select id="voiceSelect"></select>
+    <div class="actions-row">
+      <button id="voiceTestBtn">▶ Prova</button>
+      <button id="voiceResetBtn">Auto</button>
     </div>
-    <div class="voice-body">
-      <div class="voice-row">
-        <select id="voiceSelect"></select>
-        <button class="small-btn" id="voiceTestBtn">▶ Prova</button>
-        <button class="small-btn" id="voiceResetBtn" title="Torna alla scelta automatica">Auto</button>
-      </div>
-      <div class="voice-hint" id="voiceHint">
-        Le voci <strong>Natural</strong> / <strong>Premium</strong> / <strong>Enhanced</strong>
-        hanno qualità migliore. Su Edge sono disponibili le voci
-        <strong>Microsoft … Online (Natural)</strong>.
-      </div>
-    </div>
+    <div class="hint" id="voiceHint">—</div>
   </div>
-
-  <!-- Progresso -->
-  <div class="progress">
-    <span id="counter">0 / 0</span>
-    <div class="progress-bar"><div id="progressFill"></div></div>
-    <span id="pct">0%</span>
-  </div>
-
-  <!-- Card -->
-  <div id="cardWrap" class="card-wrap"></div>
-
-  <!-- Azioni -->
-  <div class="actions">
-    <button id="prevBtn" class="btn">← Indietro</button>
-    <button id="flipBtn" class="btn primary">Gira</button>
-    <button id="nextBtn" class="btn">Avanti →</button>
-  </div>
-  <div class="actions secondary">
-    <button id="knowBtn"   class="btn success">✓ Lo sapevo</button>
-    <button id="reviewBtn" class="btn danger">✗ Da rivedere</button>
-  </div>
-
-  <footer><span id="stats">—</span></footer>
 
   <div id="toast" class="toast"></div>
 
-  <!-- ============================================================
-       ORDINE OBBLIGATORIO:
-       1) data.js  → DECKS
-       2) meta.js  → temi + livelli + nuove carte
-       3) tts.js   → sintesi vocale con precaricamento
-       4) script app
-       ============================================================ -->
   <script src="data.js"></script>
   <script src="meta.js"></script>
   <script src="tts.js"></script>
-
   <script>
   (function () {
     "use strict";
-
-    // ================================================================
-    // COSTANTI
-    // ================================================================
     const STORAGE_KEY = "flashcard-progress-v2";
-    const DAY_MS = 24 * 60 * 60 * 1000;
-    const SRS_DAYS = [null, 1, 3, 7, 14, 30];
-
-    // ================================================================
-    // STATO
-    // ================================================================
-    const state = {
-      deckId: null,
-      theme: "",
-      level: "",
-      reviewOnly: false,
-      dueOnly: false,
-      autoSpeak: true,
-      cards: [],
-      index: 0,
-      flipped: false,
-      srs: {},
-    };
-
-    // ================================================================
-    // PERSISTENZA
-    // ================================================================
-    function loadProgress() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return {};
-        const data = JSON.parse(raw);
-        return data.srs || {};
-      } catch (err) {
-        console.warn("[app] Impossibile leggere localStorage:", err);
-        return {};
-      }
-    }
-
-    function saveProgress() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ srs: state.srs }));
-      } catch (err) {
-        console.warn("[app] Impossibile scrivere localStorage:", err);
-      }
-    }
-
-    // ================================================================
-    // SRS
-    // ================================================================
-    function srsKey(deckId, front) { return `${deckId}|${front}`; }
-    function getSrs(front) { return state.srs[srsKey(state.deckId, front)] || null; }
-    function isKnown(front) { const s = getSrs(front); return !!s && s.box >= 2; }
-    function isReview(front) { const s = getSrs(front); return !!s && s.box === 1; }
-    function isDue(front) { const s = getSrs(front); return !s || s.due <= Date.now(); }
-
-    function markKnown(front) {
-      const k = srsKey(state.deckId, front);
-      const cur = state.srs[k];
-      const box = Math.min((cur?.box || 0) + 1, 5);
-      state.srs[k] = { box, due: Date.now() + SRS_DAYS[box] * DAY_MS };
-    }
-
-    function markReview(front) {
-      const k = srsKey(state.deckId, front);
-      state.srs[k] = { box: 1, due: Date.now() + SRS_DAYS[1] * DAY_MS };
-    }
-
-    function resetDeck() {
-      const prefix = `${state.deckId}|`;
-      for (const k of Object.keys(state.srs)) {
-        if (k.startsWith(prefix)) delete state.srs[k];
-      }
-      saveProgress();
-    }
-
-    function mergeSrs(local, incoming) {
-      const out = { ...local };
-      for (const [key, c] of Object.entries(incoming || {})) {
-        const l = out[key];
-        if (!l) { out[key] = c; continue; }
-        if ((c.box || 0) > (l.box || 0)) out[key] = c;
-        else if ((c.box || 0) === (l.box || 0) && (c.due || 0) > (l.due || 0)) out[key] = c;
-      }
-      return out;
-    }
-
-    // ================================================================
-    // DOM
-    // ================================================================
-    const deckSel    = document.getElementById("deckSelect");
-    const themeSel   = document.getElementById("themeSelect");
-    const levelSel   = document.getElementById("levelSelect");
-    const reviewChk  = document.getElementById("reviewOnly");
-    const dueChk     = document.getElementById("dueOnly");
-    const autoSpeakChk = document.getElementById("autoSpeak");
-    const exportBtn  = document.getElementById("exportBtn");
-    const importBtn  = document.getElementById("importBtn");
-    const importFile = document.getElementById("importFile");
-    const resetBtn   = document.getElementById("resetBtn");
-    const cardWrap   = document.getElementById("cardWrap");
-    const prevBtn    = document.getElementById("prevBtn");
-    const nextBtn    = document.getElementById("nextBtn");
-    const flipBtn    = document.getElementById("flipBtn");
-    const knowBtn    = document.getElementById("knowBtn");
-    const reviewBtn  = document.getElementById("reviewBtn");
-    const counter    = document.getElementById("counter");
-    const pctEl      = document.getElementById("pct");
-    const fillEl     = document.getElementById("progressFill");
-    const statsEl    = document.getElementById("stats");
-    const toastEl    = document.getElementById("toast");
-
-    // Voice panel
-    const voicePanel  = document.getElementById("voicePanel");
-    const voiceHeader = document.getElementById("voiceHeader");
-    const voiceBadge  = document.getElementById("voiceBadge");
-    const voiceSelect = document.getElementById("voiceSelect");
-    const voiceTestBtn   = document.getElementById("voiceTestBtn");
-    const voiceResetBtn  = document.getElementById("voiceResetBtn");
-    const voiceHint      = document.getElementById("voiceHint");
-
-    // ================================================================
-    // TOAST
-    // ================================================================
-    let toastTimer = null;
-    function showToast(msg, type = "") {
-      toastEl.textContent = msg;
-      toastEl.className = "toast show " + type;
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        toastEl.classList.remove("show");
-      }, 2600);
-    }
-
-    // ================================================================
-    // POPOLAMENTO UI PRINCIPALE
-    // ================================================================
-    function populateDecks() {
-      deckSel.innerHTML = "";
-      for (const deck of DECKS) {
-        const opt = document.createElement("option");
-        opt.value = deck.id;
-        opt.textContent = `${deck.flag} ${deck.name} (${deck.cards.length})`;
-        deckSel.appendChild(opt);
-      }
-      state.deckId = DECKS[0]?.id || null;
-      deckSel.value = state.deckId;
-    }
-
-    function populateFilters() {
-      const deck = DECKS.find((d) => d.id === state.deckId);
-      if (!deck) return;
-
-      themeSel.innerHTML = '<option value="">Tutti i temi</option>';
-      for (const t of getThemesForCards(deck.cards)) {
-        const opt = document.createElement("option");
-        opt.value = t.id;
-        opt.textContent = `${t.emoji} ${t.name}`;
-        themeSel.appendChild(opt);
-      }
-
-      levelSel.innerHTML = '<option value="">Tutti i livelli</option>';
-      for (const l of getLevelsForCards(deck.cards)) {
-        const opt = document.createElement("option");
-        opt.value = l.id;
-        opt.textContent = l.name;
-        levelSel.appendChild(opt);
-      }
-
-      themeSel.value = "";
-      levelSel.value = "";
-      state.theme = "";
-      state.level = "";
-    }
-
-    // ================================================================
-    // PANNELLO VOCE
-    // ================================================================
-    function currentLang() {
-      const deck = DECKS.find((d) => d.id === state.deckId);
-      return deck?.lang || "en-US";
-    }
-
-    function voiceCategory(name) {
-      if (/Online \(Natural\)/i.test(name)) return "natural";
-      if (/Natural/i.test(name))            return "natural";
-      if (/Premium/i.test(name))            return "premium";
-      if (/Enhanced/i.test(name))           return "enhanced";
-      if (/Google/i.test(name))             return "google";
-      return "standard";
-    }
-
-    function voiceCategoryLabel(cat) {
-      switch (cat) {
-        case "natural":  return "Natural ⭐⭐⭐";
-        case "premium":  return "Premium ⭐⭐";
-        case "enhanced": return "Enhanced ⭐⭐";
-        case "google":   return "Google ⭐⭐";
-        default:         return "Standard ⭐";
-      }
-    }
-
-    function renderVoicePanel() {
-      if (!window.TTS || !TTS.isSupported()) {
-        voiceBadge.textContent = "Non supportato";
-        voiceBadge.className = "badge warn";
-        voiceSelect.innerHTML = '<option>Web Speech API non disponibile</option>';
-        voiceSelect.disabled = true;
-        voiceTestBtn.disabled = true;
-        voiceResetBtn.disabled = true;
-        voiceHint.innerHTML = "Il browser non supporta la sintesi vocale.";
-        return;
-      }
-
-      const lang = currentLang();
-      const voices = TTS.getVoices(lang);
-      const selected = TTS.getSelectedVoice(lang);
-
-      // Badge riepilogo
-      if (!TTS.isReady()) {
-        voiceBadge.textContent = "Caricamento voci…";
-        voiceBadge.className = "badge";
-      } else if (!voices.length) {
-        voiceBadge.textContent = `Nessuna voce per ${lang}`;
-        voiceBadge.className = "badge warn";
-      } else if (selected) {
-        const cat = voiceCategory(selected.name);
-        voiceBadge.textContent = `${selected.name} · ${lang}`;
-        voiceBadge.className = "badge " + (cat === "standard" ? "warn" : "good");
-      } else {
-        voiceBadge.textContent = `${voices.length} voci disponibili`;
-        voiceBadge.className = "badge";
-      }
-
-      // Select
-      voiceSelect.innerHTML = "";
-
-      if (!voices.length) {
-        voiceSelect.innerHTML = `<option>Nessuna voce ${lang}</option>`;
-        voiceSelect.disabled = true;
-        voiceTestBtn.disabled = true;
-        voiceResetBtn.disabled = true;
-        return;
-      }
-
-      // Ordina: per categoria (natural → premium → enhanced → google → standard) poi per nome
-      const order = { natural: 0, premium: 1, enhanced: 2, google: 3, standard: 4 };
-      voices.sort((a, b) => {
-        const ca = order[voiceCategory(a.name)] ?? 9;
-        const cb = order[voiceCategory(b.name)] ?? 9;
-        if (ca !== cb) return ca - cb;
-        return a.name.localeCompare(b.name);
-      });
-
-      // Opzione "Auto" (usa il pickBestVoice)
-      const autoOpt = document.createElement("option");
-      autoOpt.value = "";
-      autoOpt.textContent = "🎯 Automatica (migliore disponibile)";
-      voiceSelect.appendChild(autoOpt);
-
-      for (const v of voices) {
-        const opt = document.createElement("option");
-        const cat = voiceCategory(v.name);
-        opt.value = v.name;
-        opt.textContent = `${v.name} — ${voiceCategoryLabel(cat)}${v.localService ? "" : " ☁️"}`;
-        voiceSelect.appendChild(opt);
-      }
-
-      // Pre-selezione
-      const userChoice = TTS._state?.selectedByLang?.[lang] || "";
-      voiceSelect.value = userChoice;
-      voiceSelect.disabled = false;
-      voiceTestBtn.disabled = false;
-      voiceResetBtn.disabled = !userChoice;
-
-      // Info aggiuntive
-      const naturalCount = voices.filter(v => voiceCategory(v.name) === "natural").length;
-      if (naturalCount > 0) {
-        voiceHint.innerHTML =
-          `Ci sono <strong>${naturalCount}</strong> voci naturali per <strong>${lang}</strong>. ` +
-          `Consigliate per la massima qualità.`;
-      } else {
-        voiceHint.innerHTML =
-          `Nessuna voce naturale per <strong>${lang}</strong>. ` +
-          `Apri l'app in <strong>Microsoft Edge</strong> per le voci ` +
-          `<strong>Online (Natural)</strong>, oppure scarica le voci ` +
-          `<strong>Enhanced/Premium</strong> dalle impostazioni di sistema.`;
-      }
-    }
-
-    function onVoiceSelectChange() {
-      const lang = currentLang();
-      const voiceName = voiceSelect.value;
-      if (voiceName) {
-        TTS.setVoice(lang, voiceName);
-      } else {
-        TTS.clearVoiceSelection(lang);
-      }
-      voiceResetBtn.disabled = !voiceName;
-      renderVoicePanel();
-      // Anteprima automatica
-      speakCurrent();
-    }
-
-    function onVoiceTest() {
-      const card = state.cards[state.index];
-      const text = card?.back || "Hello, this is a test.";
-      TTS.speak(text, currentLang());
-    }
-
-    function onVoiceReset() {
-      TTS.clearVoiceSelection(currentLang());
-      renderVoicePanel();
-      showToast("Voce automatica ripristinata", "success");
-    }
-
-    // Toggle pannello
-    voiceHeader.addEventListener("click", () => {
-      voicePanel.classList.toggle("open");
-    });
-    voiceSelect.addEventListener("change", onVoiceSelectChange);
-    voiceTestBtn.addEventListener("click", onVoiceTest);
-    voiceResetBtn.addEventListener("click", onVoiceReset);
-
-    // ================================================================
-    // FILTRI
-    // ================================================================
-    function applyFilters(cards) {
-      let result = filterCards(cards, {
-        theme: state.theme || undefined,
-        level: state.level || undefined,
-      });
-      if (state.reviewOnly) result = result.filter((c) => isReview(c.front));
-      if (state.dueOnly)    result = result.filter((c) => isDue(c.front));
-      return result;
-    }
-
-    function rebuildCards({ resetIndex = true } = {}) {
-      const deck = DECKS.find((d) => d.id === state.deckId);
-      if (!deck) return;
-      state.cards = applyFilters(deck.cards);
-      if (resetIndex) {
-        state.index = 0;
-        state.flipped = false;
-      } else {
-        if (state.index >= state.cards.length) state.index = state.cards.length - 1;
-        if (state.index < 0) state.index = 0;
-      }
-      render();
-    }
-
-    // ================================================================
-    // RENDER CARD
-    // ================================================================
-    function render() {
-      const total = state.cards.length;
-
-      if (total === 0) {
-        cardWrap.innerHTML = `
-          <div class="empty">
-            <h2>Nessuna carta trovata</h2>
-            <p>Prova a cambiare tema, difficoltà o a togliere i filtri.</p>
-          </div>`;
-        counter.textContent = "0 / 0";
-        pctEl.textContent = "0%";
-        fillEl.style.width = "0%";
-        setButtonsDisabled(true);
-        updateStats();
-        return;
-      }
-
-      setButtonsDisabled(false);
-      if (state.index < 0) state.index = 0;
-      if (state.index >= total) state.index = total - 1;
-
-      const card = state.cards[state.index];
-      const theme = THEMES.find((t) => t.id === card.theme);
-      const themeLabel = theme ? `${theme.emoji} ${theme.name}` : card.theme || "";
-
-      const s = getSrs(card.front);
-      const box = s?.box || 0;
-      const boxLabel = box === 0 ? "Nuova" : box >= 5 ? "Box 5 ⭐" : `Box ${box}`;
-      const dueLabel = s ? formatDue(s.due) : "Subito";
-
-      cardWrap.innerHTML = `
-        <div class="card ${state.flipped ? "flipped" : ""}" id="cardEl">
-          <button class="card-audio" id="audioBtn" title="Ascolta (TTS) — tasto S" aria-label="Ascolta">🔊</button>
-          <div class="card-face card-front">
-            <span class="card-badge">${card.level || ""}</span>
-            <span class="card-badge theme">${themeLabel}</span>
-            <span class="card-badge box ${box >= 2 ? "active" : ""}">${boxLabel} · ${dueLabel}</span>
-            ${card.emoji ? `<div class="card-emoji">${card.emoji}</div>` : ""}
-            <div class="card-text">${escapeHtml(card.front)}</div>
-            ${card.phon ? `<div class="card-phon">${escapeHtml(card.phon)}</div>` : ""}
-            <div class="card-hint">Tocca per girare</div>
-          </div>
-          <div class="card-face card-back">
-            <span class="card-badge">${card.level || ""}</span>
-            <span class="card-badge theme">${themeLabel}</span>
-            <span class="card-badge box ${box >= 2 ? "active" : ""}">${boxLabel} · ${dueLabel}</span>
-            ${card.emoji ? `<div class="card-emoji">${card.emoji}</div>` : ""}
-            <div class="card-text">${escapeHtml(card.back)}</div>
-            <div class="card-hint">Tocca per tornare</div>
-          </div>
-        </div>`;
-
-      document.getElementById("cardEl").addEventListener("click", (e) => {
-        if (e.target.closest("#audioBtn")) return;
-        flip();
-      });
-      document.getElementById("audioBtn").addEventListener("click", (e) => {
-        e.stopPropagation();
-        speakCurrent();
-      });
-
-      counter.textContent = `${state.index + 1} / ${total}`;
-      const pct = Math.round(((state.index + 1) / total) * 100);
-      pctEl.textContent = `${pct}%`;
-      fillEl.style.width = `${pct}%`;
-
-      prevBtn.disabled = state.index === 0;
-      nextBtn.disabled = state.index === total - 1;
-      flipBtn.textContent = state.flipped ? "Mostra fronte" : "Gira";
-
-      updateStats();
-    }
-
-    function updateStats() {
-      const total = state.cards.length;
-      if (!total) { statsEl.textContent = "—"; return; }
-
-      const known  = state.cards.filter((c) => isKnown(c.front)).length;
-      const review = state.cards.filter((c) => isReview(c.front)).length;
-      const due    = state.cards.filter((c) => isDue(c.front)).length;
-      const newCnt = state.cards.filter((c) => !getSrs(c.front)).length;
-
-      statsEl.innerHTML =
-        `📚 Filtrate: <strong>${total}</strong> · ` +
-        `🆕 Nuove: <strong>${newCnt}</strong> · ` +
-        `✅ Sapute: <strong>${known}</strong> · ` +
-        `🔴 Da rivedere: <strong>${review}</strong> · ` +
-        `⏰ In scadenza: <strong>${due}</strong>`;
-    }
-
-    function formatDue(ts) {
-      const diff = ts - Date.now();
-      if (diff <= 0) return "oggi";
-      const days = Math.ceil(diff / DAY_MS);
-      if (days === 1) return "domani";
-      return `tra ${days}g`;
-    }
-
-    // ================================================================
-    // AZIONI
-    // ================================================================
-    function flip() {
-      state.flipped = !state.flipped;
-      render();
-      if (state.flipped && state.autoSpeak) speakCurrent();
-    }
-
-    function next() {
-      if (state.index < state.cards.length - 1) {
-        state.index++;
-        state.flipped = false;
-        render();
-      }
-    }
-
-    function prev() {
-      if (state.index > 0) {
-        state.index--;
-        state.flipped = false;
-        render();
-      }
-    }
-
-    function markAndAdvance(result) {
-      const card = state.cards[state.index];
-      if (!card) return;
-
-      if (result === "known")  markKnown(card.front);
-      if (result === "review") markReview(card.front);
-      saveProgress();
-
-      const newCards = applyFilters(DECKS.find((d) => d.id === state.deckId).cards);
-      const stillPresent = newCards.some((c) => c.front === card.front);
-      state.cards = newCards;
-
-      if (!stillPresent) {
-        if (state.index >= state.cards.length) state.index = state.cards.length - 1;
-        if (state.index < 0) state.index = 0;
-      } else if (state.index < state.cards.length - 1) {
-        state.index++;
-      }
-
-      state.flipped = false;
-      render();
-    }
-
-    function doReset() {
-      if (!confirm(`Azzerare tutti i progressi del mazzo "${state.deckId}"?`)) return;
-      resetDeck();
-      rebuildCards();
-      showToast("Progressi azzerati", "success");
-    }
-
-    // ================================================================
-    // TTS
-    // ================================================================
-    function speakCurrent() {
-      const card = state.cards[state.index];
-      if (!card || !window.TTS) return;
-      const lang = currentLang();
-      const btn = document.getElementById("audioBtn");
-      if (btn) btn.classList.add("speaking");
-
-      TTS.speak(card.back, lang).finally(() => {
-        const b = document.getElementById("audioBtn");
-        if (b) b.classList.remove("speaking");
-      });
-    }
-
-    // ================================================================
-    // EXPORT / IMPORT
-    // ================================================================
-    exportBtn.addEventListener("click", () => {
-      const payload = {
-        version: 2,
-        app: "flashcard-it",
-        exportedAt: new Date().toISOString(),
-        progress: JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"),
-      };
-      const blob = new Blob(
-        [JSON.stringify(payload, null, 2)],
-        { type: "application/json" }
-      );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `flashcard-backup-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-      const count = Object.keys(payload.progress.srs || {}).length;
-      showToast(`Esportate ${count} voci`, "success");
-    });
-
-    importBtn.addEventListener("click", () => importFile.click());
-
-    importFile.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const data = JSON.parse(reader.result);
-
-          let incoming;
-          if (data.progress?.srs) incoming = data.progress.srs;
-          else if (data.srs) incoming = data.srs;
-          else if (data && typeof data === "object" && !Array.isArray(data)) incoming = data;
-          else throw new Error("Formato JSON non riconosciuto");
-
-          if (typeof incoming !== "object" || Array.isArray(incoming)) {
-            throw new Error("Struttura non valida");
-          }
-
-          const count = Object.keys(incoming).length;
-          if (count === 0) {
-            showToast("File vuoto o senza progressi", "error");
-            return;
-          }
-
-          const merge = confirm(
-            `Trovate ${count} voci.\n\n` +
-            `OK  = FONDI con i progressi attuali (consigliato)\n` +
-            `Annulla = SOSTITUISCI completamente`
-          );
-
-          const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-          const next = merge
-            ? { ...current, srs: mergeSrs(current.srs || {}, incoming) }
-            : { srs: incoming };
-
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-          state.srs = next.srs || {};
-          rebuildCards({ resetIndex: false });
-          showToast(
-            `Importate ${count} voci (${merge ? "merge" : "sostituzione"})`,
-            "success"
-          );
-        } catch (err) {
-          console.error(err);
-          showToast("File JSON non valido: " + err.message, "error");
-        }
-      };
-      reader.readAsText(file);
-      e.target.value = "";
-    });
-
-    // ================================================================
-    // UTILITY
-    // ================================================================
-    function setButtonsDisabled(disabled) {
-      [prevBtn, nextBtn, flipBtn, knowBtn, reviewBtn].forEach((b) => {
-        b.disabled = disabled;
-      });
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
-    }
-
-    // ================================================================
-    // EVENTI
-    // ================================================================
-    deckSel.addEventListener("change", () => {
-      state.deckId = deckSel.value;
-      state.reviewOnly = false;
-      state.dueOnly = false;
-      reviewChk.checked = false;
-      dueChk.checked = false;
-      populateFilters();
-      rebuildCards();
-      renderVoicePanel();
-      // Precarica la nuova lingua
-      if (window.TTS) TTS.preload([currentLang()]).catch(() => {});
-    });
-
-    themeSel.addEventListener("change", () => {
-      state.theme = themeSel.value;
-      rebuildCards();
-    });
-
-    levelSel.addEventListener("change", () => {
-      state.level = levelSel.value;
-      rebuildCards();
-    });
-
-    reviewChk.addEventListener("change", () => {
-      state.reviewOnly = reviewChk.checked;
-      rebuildCards();
-    });
-
-    dueChk.addEventListener("change", () => {
-      state.dueOnly = dueChk.checked;
-      rebuildCards();
-    });
-
-    autoSpeakChk.addEventListener("change", () => {
-      state.autoSpeak = autoSpeakChk.checked;
-    });
-
-    resetBtn.addEventListener("click", doReset);
-    nextBtn.addEventListener("click", next);
-    prevBtn.addEventListener("click", prev);
-    flipBtn.addEventListener("click", flip);
-    knowBtn.addEventListener("click", () => markAndAdvance("known"));
-    reviewBtn.addEventListener("click", () => markAndAdvance("review"));
-
-    document.addEventListener("keydown", (e) => {
-      const tag = e.target.tagName;
-      if (tag === "SELECT" || tag === "INPUT" || tag === "TEXTAREA") return;
-
-      if (e.key === "ArrowRight") next();
-      else if (e.key === "ArrowLeft") prev();
-      else if (e.key === " ") { e.preventDefault(); flip(); }
-      else if (e.key.toLowerCase() === "s") speakCurrent();
-    });
-
-    // ================================================================
-    // BOOT
-    // ================================================================
-    state.srs = loadProgress();
-    state.autoSpeak = autoSpeakChk.checked;
-    populateDecks();
-    populateFilters();
-    rebuildCards();
-
-    // Pannello voce: render iniziale + refresh quando le voci sono pronte
-    renderVoicePanel();
-    if (window.TTS) {
-      TTS.onVoicesReady(() => {
-        renderVoicePanel();
-      });
-    }
+    const DAY_MS = 86400000;
+    const SRS_DAYS = [null,1,3,7,14,30];
+    const state = { deckId:null, theme:"", level:"", reviewOnly:false, dueOnly:false, autoSpeak:true, cards:[], index:0, flipped:false, srs:{} };
+    function loadProgress(){try{const r=localStorage.getItem(STORAGE_KEY);return r?(JSON.parse(r).srs||{}):{}}catch(e){return{}}}
+    function saveProgress(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({srs:state.srs}))}catch(e){}}
+    function srsKey(d,f){return d+"|"+f}
+    function getSrs(f){return state.srs[srsKey(state.deckId,f)]||null}
+    function isKnown(f){const s=getSrs(f);return !!s&&s.box>=2}
+    function isReview(f){const s=getSrs(f);return !!s&&s.box===1}
+    function isDue(f){const s=getSrs(f);return !s||s.due<=Date.now()}
+    function markKnown(f){const k=srsKey(state.deckId,f);const b=Math.min((state.srs[k]?.box||0)+1,5);state.srs[k]={box:b,due:Date.now()+SRS_DAYS[b]*DAY_MS}}
+    function markReview(f){state.srs[srsKey(state.deckId,f)]={box:1,due:Date.now()+SRS_DAYS[1]*DAY_MS}}
+    function resetDeck(){const p=state.deckId+"|";for(const k of Object.keys(state.srs))if(k.startsWith(p))delete state.srs[k];saveProgress()}
+    function mergeSrs(l,i){const o={...l};for(const[k,c]of Object.entries(i||{})){const e=o[k];if(!e){o[k]=c;continue}if((c.box||0)>(e.box||0))o[k]=c;else if((c.box||0)===(e.box||0)&&(c.due||0)>(e.due||0))o[k]=c}return o}
+    const el=id=>document.getElementById(id);
+    const deckSel=el("deckSelect"),themeSel=el("themeSelect"),levelSel=el("levelSelect");
+    const reviewChk=el("reviewOnly"),dueChk=el("dueOnly"),autoSpeakChk=el("autoSpeak");
+    const exportBtn=el("exportBtn"),importBtn=el("importBtn"),importFile=el("importFile"),resetBtn=el("resetBtn");
+    const cardWrap=el("cardWrap");
+    const prevBtn=el("prevBtn"),nextBtn=el("nextBtn"),flipBtn=el("flipBtn"),knowBtn=el("knowBtn"),reviewBtn=el("reviewBtn");
+    const counter=el("counter"),pctEl=el("pct"),fillEl=el("progressFill"),titleDeck=el("titleDeck"),titleStats=el("titleStats");
+    const toastEl=el("toast");
+    const filtersBtn=el("filtersBtn"),filtersPanel=el("filtersPanel"),overlay=el("overlay");
+    const voiceBtn=el("voiceBtn"),voiceSheet=el("voiceSheet"),voiceSelect=el("voiceSelect"),voiceTestBtn=el("voiceTestBtn"),voiceResetBtn=el("voiceResetBtn"),voiceHint=el("voiceHint");
+    let toastTimer;
+    function showToast(m,t=""){toastEl.textContent=m;toastEl.className="toast show "+t;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastEl.classList.remove("show"),2400)}
+    function openFilters(){filtersPanel.classList.add("open");overlay.classList.add("open")}
+    function closeFilters(){filtersPanel.classList.remove("open");overlay.classList.remove("open")}
+    function openVoice(){voiceSheet.classList.add("open");overlay.classList.add("open");renderVoiceSheet()}
+    function closeVoice(){voiceSheet.classList.remove("open");overlay.classList.remove("open")}
+    filtersBtn.onclick=()=>filtersPanel.classList.contains("open")?closeFilters():openFilters();
+    voiceBtn.onclick=()=>voiceSheet.classList.contains("open")?closeVoice():openVoice();
+    overlay.onclick=()=>{closeFilters();closeVoice()};
+    function populateDecks(){deckSel.innerHTML="";for(const d of DECKS){const o=document.createElement("option");o.value=d.id;o.textContent=`${d.flag} ${d.name} (${d.cards.length})`;deckSel.appendChild(o)}state.deckId=DECKS[0]?.id||null;deckSel.value=state.deckId}
+    function populateFilters(){const d=DECKS.find(x=>x.id===state.deckId);if(!d)return;themeSel.innerHTML='<option value="">Tutti i temi</option>';for(const t of getThemesForCards(d.cards)){const o=document.createElement("option");o.value=t.id;o.textContent=`${t.emoji} ${t.name}`;themeSel.appendChild(o)}levelSel.innerHTML='<option value="">Tutti i livelli</option>';for(const l of getLevelsForCards(d.cards)){const o=document.createElement("option");o.value=l.id;o.textContent=l.name;levelSel.appendChild(o)}themeSel.value="";levelSel.value="";state.theme="";state.level="";titleDeck.textContent=`${d.flag} ${d.name}`}
+    function applyFilters(cards){let r=filterCards(cards,{theme:state.theme||undefined,level:state.level||undefined});if(state.reviewOnly)r=r.filter(c=>isReview(c.front));if(state.dueOnly)r=r.filter(c=>isDue(c.front));return r}
+    function rebuildCards(o={}){const d=DECKS.find(x=>x.id===state.deckId);if(!d)return;state.cards=applyFilters(d.cards);if(o.resetIndex!==false){state.index=0;state.flipped=false}else{if(state.index>=state.cards.length)state.index=state.cards.length-1;if(state.index<0)state.index=0}render()}
+    function render(){const total=state.cards.length;if(total===0){cardWrap.innerHTML='<div class="empty"><h2>Nessuna carta</h2><p>Cambia tema o livello.</p></div>';counter.textContent="0 / 0";pctEl.textContent="0%";fillEl.style.width="0%";titleStats.textContent="—";[prevBtn,nextBtn,flipBtn,knowBtn,reviewBtn].forEach(b=>b.disabled=true);return}[prevBtn,nextBtn,flipBtn,knowBtn,reviewBtn].forEach(b=>b.disabled=false);if(state.index<0)state.index=0;if(state.index>=total)state.index=total-1;const c=state.cards[state.index];const t=THEMES.find(x=>x.id===c.theme);const tl=t?`${t.emoji} ${t.name}`:"";const s=getSrs(c.front);const box=s?.box||0;const bl=box===0?"Nuova":box>=5?"Box 5 ⭐":`Box ${box}`;const dl=s?formatDue(s.due):"Subito";cardWrap.innerHTML=`
+      <div class="card ${state.flipped?"flipped":""}" id="cardEl">
+        <button class="card-audio" id="audioBtn" aria-label="Ascolta">🔊</button>
+        <div class="card-face card-front">
+          <span class="card-badge">${c.level||""}</span>
+          ${tl?`<span class="card-badge theme">${tl}</span>`:""}
+          <span class="card-badge box ${box>=2?"active":""}">${bl} · ${dl}</span>
+          ${c.emoji?`<div class="card-emoji">${c.emoji}</div>`:""}
+          <div class="card-text">${escapeHtml(c.front)}</div>
+          ${c.phon?`<div class="card-phon">${escapeHtml(c.phon)}</div>`:""}
+          <div class="card-hint">Tocca per girare</div>
+        </div>
+        <div class="card-face card-back">
+          <span class="card-badge">${c.level||""}</span>
+          ${tl?`<span class="card-badge theme">${tl}</span>`:""}
+          <span class="card-badge box ${box>=2?"active":""}">${bl} · ${dl}</span>
+          ${c.emoji?`<div class="card-emoji">${c.emoji}</div>`:""}
+          <div class="card-text">${escapeHtml(c.back)}</div>
+        </div>
+      </div>`;el("cardEl").addEventListener("click",e=>{if(e.target.closest("#audioBtn"))return;flip()});el("audioBtn").addEventListener("click",e=>{e.stopPropagation();speakCurrent()});counter.textContent=`${state.index+1} / ${total}`;const p=Math.round(((state.index+1)/total)*100);pctEl.textContent=p+"%";fillEl.style.width=p+"%";prevBtn.disabled=state.index===0;nextBtn.disabled=state.index===total-1;flipBtn.textContent=state.flipped?"Fronte":"Gira";titleStats.textContent=`${state.index+1}/${total} · ✓${state.cards.filter(x=>isKnown(x.front)).length} ✗${state.cards.filter(x=>isReview(x.front)).length}`}
+    function formatDue(ts){const d=ts-Date.now();if(d<=0)return"oggi";const days=Math.ceil(d/DAY_MS);if(days===1)return"domani";return`tra ${days}g`}
+    function flip(){state.flipped=!state.flipped;render();if(state.flipped&&state.autoSpeak)speakCurrent()}
+    function next(){if(state.index<state.cards.length-1){state.index++;state.flipped=false;render()}}
+    function prev(){if(state.index>0){state.index--;state.flipped=false;render()}}
+    function markAndAdvance(r){const c=state.cards[state.index];if(!c)return;if(r==="known")markKnown(c.front);if(r==="review")markReview(c.front);saveProgress();const nc=applyFilters(DECKS.find(x=>x.id===state.deckId).cards);const still=nc.some(x=>x.front===c.front);state.cards=nc;if(!still){if(state.index>=state.cards.length)state.index=state.cards.length-1;if(state.index<0)state.index=0}else if(state.index<state.cards.length-1){state.index++}state.flipped=false;render()}
+    function doReset(){if(!confirm(`Azzerare i progressi del mazzo "${state.deckId}"?`))return;resetDeck();rebuildCards();showToast("Progressi azzerati","success");closeFilters()}
+    function currentLang(){return DECKS.find(d=>d.id===state.deckId)?.lang||"en-US"}
+    function speakCurrent(){const c=state.cards[state.index];if(!c||!window.TTS)return;const b=el("audioBtn");if(b)b.classList.add("speaking");TTS.speak(c.back,currentLang()).finally(()=>{const x=el("audioBtn");if(x)x.classList.remove("speaking")})}
+    function renderVoiceSheet(){if(!window.TTS||!TTS.isSupported()){voiceSelect.innerHTML='<option>Non supportato</option>';voiceSelect.disabled=true;voiceTestBtn.disabled=true;voiceResetBtn.disabled=true;voiceHint.textContent="Il dispositivo non supporta la sintesi vocale.";return}const lang=currentLang();const voices=TTS.getVoices(lang);voiceSelect.innerHTML="";if(!voices.length){voiceSelect.innerHTML=`<option>Nessuna voce per ${lang}</option>`;voiceSelect.disabled=true;voiceTestBtn.disabled=true;voiceResetBtn.disabled=true;voiceHint.textContent="Nessuna voce disponibile.";return}const ao=document.createElement("option");ao.value="";ao.textContent="🎯 Automatica (migliore)";voiceSelect.appendChild(ao);for(const v of voices){const o=document.createElement("option");o.value=v.name||v.voiceURI||v.lang;o.textContent=v.name||v.lang;voiceSelect.appendChild(o)}const uc=TTS._state?.native?null:(TTS._state?.selectedByLangWeb?.[lang]||"");voiceSelect.value=uc||"";voiceSelect.disabled=false;voiceTestBtn.disabled=false;voiceResetBtn.disabled=!uc;voiceHint.textContent=`${voices.length} voci per ${lang}.`}
+    voiceSelect.onchange=()=>{const l=currentLang();if(voiceSelect.value)TTS.setVoice(l,voiceSelect.value);else TTS.clearVoiceSelection(l);voiceResetBtn.disabled=!voiceSelect.value;renderVoiceSheet()};
+    voiceTestBtn.onclick=()=>{const c=state.cards[state.index];TTS.speak(c?.back||"Hello, this is a test.",currentLang())};
+    voiceResetBtn.onclick=()=>{TTS.clearVoiceSelection(currentLang());renderVoiceSheet();showToast("Voce automatica ripristinata","success")};
+    exportBtn.onclick=()=>{const p={version:2,exportedAt:new Date().toISOString(),progress:JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}")};const b=new Blob([JSON.stringify(p,null,2)],{type:"application/json"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=`flashcard-backup-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);showToast(`Esportate ${Object.keys(p.progress.srs||{}).length} voci`,"success");closeFilters()};
+    importBtn.onclick=()=>importFile.click();
+    importFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);let inc;if(d.progress?.srs)inc=d.progress.srs;else if(d.srs)inc=d.srs;else if(d&&typeof d==="object"&&!Array.isArray(d))inc=d;else throw new Error("Formato non riconosciuto");const cnt=Object.keys(inc).length;if(!cnt){showToast("File vuoto","error");return}const mg=confirm(`Trovate ${cnt} voci.\n\nOK = FONDI\nAnnulla = SOSTITUISCI`);const cur=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");const nx=mg?{...cur,srs:mergeSrs(cur.srs||{},inc)}:{srs:inc};localStorage.setItem(STORAGE_KEY,JSON.stringify(nx));state.srs=nx.srs||{};rebuildCards({resetIndex:false});showToast(`Importate ${cnt} voci`,"success");closeFilters()}catch(err){showToast("JSON non valido: "+err.message,"error")}};r.readAsText(f);e.target.value=""};
+    resetBtn.onclick=doReset;
+    function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+    deckSel.onchange=()=>{state.deckId=deckSel.value;state.reviewOnly=false;state.dueOnly=false;reviewChk.checked=false;dueChk.checked=false;populateFilters();rebuildCards();if(window.TTS)TTS.preload([currentLang()]).catch(()=>{})};
+    themeSel.onchange=()=>{state.theme=themeSel.value;rebuildCards()};
+    levelSel.onchange=()=>{state.level=levelSel.value;rebuildCards()};
+    reviewChk.onchange=()=>{state.reviewOnly=reviewChk.checked;rebuildCards()};
+    dueChk.onchange=()=>{state.dueOnly=dueChk.checked;rebuildCards()};
+    autoSpeakChk.onchange=()=>{state.autoSpeak=autoSpeakChk.checked};
+    nextBtn.onclick=next;prevBtn.onclick=prev;flipBtn.onclick=flip;
+    knowBtn.onclick=()=>markAndAdvance("known");
+    reviewBtn.onclick=()=>markAndAdvance("review");
+    document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="SELECT"||t==="INPUT"||t==="TEXTAREA")return;if(e.key==="ArrowRight")next();else if(e.key==="ArrowLeft")prev();else if(e.key===" "){e.preventDefault();flip()}else if(e.key.toLowerCase()==="s")speakCurrent()});
+    let tx=0,ty=0,tm=false;
+    cardWrap.addEventListener("touchstart",e=>{if(e.target.closest("button"))return;tx=e.touches[0].clientX;ty=e.touches[0].clientY;tm=false},{passive:true});
+    cardWrap.addEventListener("touchmove",e=>{if(!tx)return;const dx=Math.abs(e.touches[0].clientX-tx),dy=Math.abs(e.touches[0].clientY-ty);if(dx>10||dy>10)tm=true},{passive:true});
+    cardWrap.addEventListener("touchend",e=>{if(!tx||tm){tx=0;return}const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;tx=0;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){e.preventDefault();if(dx>0)prev();else next()}},{passive:false});
+    state.srs=loadProgress();state.autoSpeak=autoSpeakChk.checked;
+    populateDecks();populateFilters();rebuildCards();
+    if(window.TTS)TTS.onVoicesReady(()=>{if(voiceSheet.classList.contains("open"))renderVoiceSheet()});
   })();
   </script>
 </body>
