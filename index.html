@@ -4,75 +4,439 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#3b82f6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <title>Flashcard</title>
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{--bg:#f5f7fb;--card-bg:#fff;--text:#1f2937;--muted:#6b7280;--accent:#3b82f6;--accent-dark:#2563eb;--success:#10b981;--danger:#ef4444;--border:#e5e7eb;--shadow:0 4px 16px rgba(0,0,0,.08);--radius:16px;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px)}
-    html,body{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);touch-action:manipulation;user-select:none;-webkit-user-select:none}
-    .app{display:flex;flex-direction:column;height:100dvh;max-width:720px;margin:0 auto;padding-left:calc(var(--safe-left) + 8px);padding-right:calc(var(--safe-right) + 8px);padding-top:calc(var(--safe-top) + 4px);padding-bottom:calc(var(--safe-bottom) + 8px)}
-    .topbar{display:flex;align-items:center;gap:6px;padding:4px 0;flex-shrink:0}
-    .topbar button{min-width:44px;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:var(--card-bg);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-    .topbar .title{flex:1;text-align:center;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .topbar .title small{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:1px}
-    .filters{position:fixed;top:0;left:0;right:0;background:var(--card-bg);border-bottom:1px solid var(--border);padding:calc(var(--safe-top) + 14px) 12px 16px;transform:translateY(-100%);transition:transform .25s ease;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.1)}
-    .filters.open{transform:translateY(0)}
-    .filters .row{display:flex;gap:8px;margin-bottom:8px}
-    .filters .row>*{flex:1;min-width:0}
-    .filters label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px;display:block}
-    .filters select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card-bg);font-size:14px;color:var(--text);min-height:44px}
-    .filters .toggle-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-    .filters .toggle-row label{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;border:1px solid var(--border);font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer;margin:0;min-height:40px}
-    .filters .toggle-row input[type="checkbox"]{accent-color:var(--accent);width:18px;height:18px}
-    .filters .tool-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px}
-    .filters .tool-row button{padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card-bg);font-size:13px;cursor:pointer;min-height:44px}
-    .filters .tool-row button.danger{color:var(--danger);border-color:var(--danger)}
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:99}
-    .overlay.open{opacity:1;pointer-events:auto}
-    .main{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px 0;perspective:1200px}
-    .card{position:relative;width:100%;height:100%;cursor:pointer;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,.0,.2,1)}
-    .card.flipped{transform:rotateY(180deg)}
-    .card-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);backface-visibility:hidden;border:1px solid var(--border)}
-    .card-back{transform:rotateY(180deg)}
-    .card-emoji{font-size:clamp(2rem,8vw,3.5rem);line-height:1}
-    .card-text{font-size:clamp(1.5rem,6vw,2.5rem);font-weight:700;text-align:center;line-height:1.15;word-break:break-word;overflow-wrap:anywhere}
-    .card-phon{font-size:clamp(.85rem,3.5vw,1.1rem);color:var(--muted);font-style:italic}
-    .card-badge{position:absolute;top:10px;left:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:4px 8px;border-radius:999px;background:var(--accent);color:#fff}
-    .card-badge.theme{left:auto;right:52px;background:var(--muted);max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .card-badge.box{top:auto;bottom:10px;left:10px;background:var(--border);color:var(--muted);font-size:9px}
-    .card-badge.box.active{background:var(--success);color:#fff}
-    .card-audio{position:absolute;top:6px;right:6px;width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--card-bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:2}
-    .card-audio.speaking{background:var(--accent);color:#fff;border-color:var(--accent)}
-    .card-hint{position:absolute;bottom:10px;right:10px;font-size:10px;color:var(--muted)}
-    .bottombar{flex-shrink:0;padding:6px 0 4px;display:flex;flex-direction:column;gap:6px}
-    .progress-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
-    .progress-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
-    .progress-bar>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-dark));width:0;transition:width .3s ease}
-    .btn-row{display:grid;gap:6px}
-    .btn-row.nav{grid-template-columns:1fr 1.3fr 1fr}
-    .btn-row.rate{grid-template-columns:1fr 1fr}
-    .btn{padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;background:var(--card-bg);color:var(--text);border:1px solid var(--border);min-height:52px;transition:transform .1s;display:flex;align-items:center;justify-content:center}
-    .btn:active{transform:scale(.97)}
-    .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-    .btn.success{background:var(--success);color:#fff;border-color:var(--success)}
-    .btn.danger{background:var(--danger);color:#fff;border-color:var(--danger)}
-    .btn:disabled{opacity:.4;cursor:not-allowed}
-    .voice-sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card-bg);border-top-left-radius:20px;border-top-right-radius:20px;padding:12px 16px calc(var(--safe-bottom) + 16px);transform:translateY(100%);transition:transform .3s ease;z-index:101;box-shadow:0 -8px 24px rgba(0,0,0,.15);max-width:720px;margin:0 auto}
-    .voice-sheet.open{transform:translateY(0)}
-    .voice-sheet .grabber{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 12px}
-    .voice-sheet h3{font-size:14px;margin-bottom:10px}
-    .voice-sheet select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card-bg);font-size:14px;margin-bottom:8px;min-height:48px}
-    .voice-sheet .actions-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
-    .voice-sheet .actions-row button{padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card-bg);font-size:14px;cursor:pointer;min-height:48px}
-    .voice-sheet .hint{font-size:12px;color:var(--muted);line-height:1.5}
-    .empty{width:100%;padding:40px 20px;text-align:center;color:var(--muted);background:var(--card-bg);border-radius:var(--radius);border:1px dashed var(--border)}
-    .empty h2{font-size:16px;margin-bottom:8px;color:var(--text)}
-    .toast{position:fixed;bottom:calc(var(--safe-bottom) + 100px);left:50%;transform:translateX(-50%) translateY(20px);background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:200;max-width:90vw;text-align:center}
-    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-    .toast.success{background:var(--success)}
-    .toast.error{background:var(--danger)}
-    @media (max-height:600px){.card-text{font-size:clamp(1.25rem,5vw,2rem)}.card-emoji{font-size:clamp(1.5rem,6vw,2.5rem)}}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f7fb;
+      --card-bg: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #3b82f6;
+      --accent-dark: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --border: #e5e7eb;
+      --shadow: 0 4px 16px rgba(0,0,0,.08);
+      --radius: 16px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 720px;
+      margin: 0 auto;
+      padding-left: calc(var(--safe-left) + 8px);
+      padding-right: calc(var(--safe-right) + 8px);
+      padding-top: calc(var(--safe-top) + 4px);
+      padding-bottom: calc(var(--safe-bottom) + 8px);
+    }
+
+    /* ---- TOP BAR ---- */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+      flex-shrink: 0;
+    }
+    .topbar button {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .topbar .title {
+      flex: 1;
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .topbar .title small {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    /* ---- DRAWER FILTRI ---- */
+    .filters {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: calc(var(--safe-top) + 14px) 12px 16px;
+      transform: translateY(-100%);
+      transition: transform .25s ease;
+      z-index: 100;
+      box-shadow: 0 8px 24px rgba(0,0,0,.1);
+    }
+    .filters.open { transform: translateY(0); }
+    .filters .row {
+      display: flex; gap: 8px; margin-bottom: 8px;
+    }
+    .filters .row > * { flex: 1; min-width: 0; }
+    .filters label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+      margin-bottom: 4px;
+      display: block;
+    }
+    .filters select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      font-size: 14px;
+      color: var(--text);
+      min-height: 44px;
+    }
+    .filters .toggle-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .filters .toggle-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--text);
+      cursor: pointer;
+      margin: 0;
+      min-height: 40px;
+    }
+    .filters .toggle-row input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 18px;
+      height: 18px;
+    }
+    .filters .tool-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .filters .tool-row button {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      font-size: 13px;
+      cursor: pointer;
+      min-height: 44px;
+    }
+    .filters .tool-row button.danger {
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s ease;
+      z-index: 99;
+    }
+    .overlay.open { opacity: 1; pointer-events: auto; }
+
+    /* ---- CARD ---- */
+    .main {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 0;
+      perspective: 1200px;
+    }
+    .card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform .5s cubic-bezier(.4,.0,.2,1);
+    }
+    .card.flipped { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backface-visibility: hidden;
+      border: 1px solid var(--border);
+    }
+    .card-back { transform: rotateY(180deg); }
+    .card-emoji { font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1; }
+    .card-text {
+      font-size: clamp(1.5rem, 6vw, 2.5rem);
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.15;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .card-phon {
+      font-size: clamp(0.85rem, 3.5vw, 1.1rem);
+      color: var(--muted);
+      font-style: italic;
+    }
+    .card-badge {
+      position: absolute;
+      top: 10px; left: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+    }
+    .card-badge.theme {
+      left: auto; right: 52px;
+      background: var(--muted);
+      max-width: 40%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .card-badge.box {
+      top: auto; bottom: 10px; left: 10px;
+      background: var(--border);
+      color: var(--muted);
+      font-size: 9px;
+    }
+    .card-badge.box.active { background: var(--success); color: #fff; }
+    .card-audio {
+      position: absolute;
+      top: 6px; right: 6px;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      z-index: 2;
+    }
+    .card-audio.speaking {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .card-hint {
+      position: absolute;
+      bottom: 10px; right: 10px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* ---- BOTTOM BAR ---- */
+    .bottombar {
+      flex-shrink: 0;
+      padding: 6px 0 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .progress-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-bar > div {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+      width: 0;
+      transition: width .3s ease;
+    }
+    .btn-row { display: grid; gap: 6px; }
+    .btn-row.nav { grid-template-columns: 1fr 1.3fr 1fr; }
+    .btn-row.rate { grid-template-columns: 1fr 1fr; }
+    .btn {
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      min-height: 52px;
+      transition: transform .1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.success { background: var(--success); color: #fff; border-color: var(--success); }
+    .btn.danger  { background: var(--danger);  color: #fff; border-color: var(--danger); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ---- VOICE SHEET ---- */
+    .voice-sheet {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: var(--card-bg);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      padding: 12px 16px calc(var(--safe-bottom) + 16px);
+      transform: translateY(100%);
+      transition: transform .3s ease;
+      z-index: 101;
+      box-shadow: 0 -8px 24px rgba(0,0,0,.15);
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .voice-sheet.open { transform: translateY(0); }
+    .voice-sheet .grabber {
+      width: 40px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 12px;
+    }
+    .voice-sheet h3 {
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .voice-sheet select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      font-size: 14px;
+      margin-bottom: 8px;
+      min-height: 48px;
+    }
+    .voice-sheet .actions-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .voice-sheet .actions-row button {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      font-size: 14px;
+      cursor: pointer;
+      min-height: 48px;
+    }
+    .voice-sheet .hint {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ---- EMPTY / TOAST ---- */
+    .empty {
+      width: 100%;
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted);
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      border: 1px dashed var(--border);
+    }
+    .empty h2 { font-size: 16px; margin-bottom: 8px; color: var(--text); }
+
+    .toast {
+      position: fixed;
+      bottom: calc(var(--safe-bottom) + 100px);
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1f2937;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0,0,0,.2);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s, transform .25s;
+      z-index: 200;
+      max-width: 90vw;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+
+    @media (max-height: 600px) {
+      .card-text { font-size: clamp(1.25rem, 5vw, 2rem); }
+      .card-emoji { font-size: clamp(1.5rem, 6vw, 2.5rem); }
+    }
   </style>
 </head>
 <body>
@@ -85,7 +449,11 @@
       </div>
       <button id="voiceBtn" aria-label="Voce">🎙️</button>
     </div>
-    <div class="main"><div id="cardWrap" style="width:100%;height:100%"></div></div>
+
+    <div class="main">
+      <div id="cardWrap" style="width:100%;height:100%;"></div>
+    </div>
+
     <div class="bottombar">
       <div class="progress-row">
         <span id="counter">0 / 0</span>
@@ -108,11 +476,20 @@
 
   <div class="filters" id="filtersPanel">
     <div class="row">
-      <div><label for="deckSelect">Mazzo</label><select id="deckSelect"></select></div>
+      <div>
+        <label for="deckSelect">Mazzo</label>
+        <select id="deckSelect"></select>
+      </div>
     </div>
     <div class="row">
-      <div><label for="themeSelect">Tema</label><select id="themeSelect"><option value="">Tutti i temi</option></select></div>
-      <div><label for="levelSelect">Livello</label><select id="levelSelect"><option value="">Tutti i livelli</option></select></div>
+      <div>
+        <label for="themeSelect">Tema</label>
+        <select id="themeSelect"><option value="">Tutti i temi</option></select>
+      </div>
+      <div>
+        <label for="levelSelect">Livello</label>
+        <select id="levelSelect"><option value="">Tutti i livelli</option></select>
+      </div>
     </div>
     <div class="toggle-row">
       <label><input type="checkbox" id="reviewOnly" /> 🔴 Solo da rivedere</label>
@@ -143,101 +520,439 @@
   <script src="data.js"></script>
   <script src="meta.js"></script>
   <script src="tts.js"></script>
+
   <script>
   (function () {
     "use strict";
+
     const STORAGE_KEY = "flashcard-progress-v2";
-    const DAY_MS = 86400000;
-    const SRS_DAYS = [null,1,3,7,14,30];
-    const state = { deckId:null, theme:"", level:"", reviewOnly:false, dueOnly:false, autoSpeak:true, cards:[], index:0, flipped:false, srs:{} };
-    function loadProgress(){try{const r=localStorage.getItem(STORAGE_KEY);return r?(JSON.parse(r).srs||{}):{}}catch(e){return{}}}
-    function saveProgress(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({srs:state.srs}))}catch(e){}}
-    function srsKey(d,f){return d+"|"+f}
-    function getSrs(f){return state.srs[srsKey(state.deckId,f)]||null}
-    function isKnown(f){const s=getSrs(f);return !!s&&s.box>=2}
-    function isReview(f){const s=getSrs(f);return !!s&&s.box===1}
-    function isDue(f){const s=getSrs(f);return !s||s.due<=Date.now()}
-    function markKnown(f){const k=srsKey(state.deckId,f);const b=Math.min((state.srs[k]?.box||0)+1,5);state.srs[k]={box:b,due:Date.now()+SRS_DAYS[b]*DAY_MS}}
-    function markReview(f){state.srs[srsKey(state.deckId,f)]={box:1,due:Date.now()+SRS_DAYS[1]*DAY_MS}}
-    function resetDeck(){const p=state.deckId+"|";for(const k of Object.keys(state.srs))if(k.startsWith(p))delete state.srs[k];saveProgress()}
-    function mergeSrs(l,i){const o={...l};for(const[k,c]of Object.entries(i||{})){const e=o[k];if(!e){o[k]=c;continue}if((c.box||0)>(e.box||0))o[k]=c;else if((c.box||0)===(e.box||0)&&(c.due||0)>(e.due||0))o[k]=c}return o}
-    const el=id=>document.getElementById(id);
-    const deckSel=el("deckSelect"),themeSel=el("themeSelect"),levelSel=el("levelSelect");
-    const reviewChk=el("reviewOnly"),dueChk=el("dueOnly"),autoSpeakChk=el("autoSpeak");
-    const exportBtn=el("exportBtn"),importBtn=el("importBtn"),importFile=el("importFile"),resetBtn=el("resetBtn");
-    const cardWrap=el("cardWrap");
-    const prevBtn=el("prevBtn"),nextBtn=el("nextBtn"),flipBtn=el("flipBtn"),knowBtn=el("knowBtn"),reviewBtn=el("reviewBtn");
-    const counter=el("counter"),pctEl=el("pct"),fillEl=el("progressFill"),titleDeck=el("titleDeck"),titleStats=el("titleStats");
-    const toastEl=el("toast");
-    const filtersBtn=el("filtersBtn"),filtersPanel=el("filtersPanel"),overlay=el("overlay");
-    const voiceBtn=el("voiceBtn"),voiceSheet=el("voiceSheet"),voiceSelect=el("voiceSelect"),voiceTestBtn=el("voiceTestBtn"),voiceResetBtn=el("voiceResetBtn"),voiceHint=el("voiceHint");
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const SRS_DAYS = [null, 1, 3, 7, 14, 30];
+
+    const state = {
+      deckId: null, theme: "", level: "",
+      reviewOnly: false, dueOnly: false, autoSpeak: true,
+      cards: [], index: 0, flipped: false, srs: {},
+    };
+
+    function loadProgress() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? (JSON.parse(raw).srs || {}) : {};
+      } catch (e) { return {}; }
+    }
+    function saveProgress() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ srs: state.srs })); }
+      catch (e) { console.warn(e); }
+    }
+
+    function srsKey(deckId, front) { return `${deckId}|${front}`; }
+    function getSrs(front) { return state.srs[srsKey(state.deckId, front)] || null; }
+    function isKnown(front) { const s = getSrs(front); return !!s && s.box >= 2; }
+    function isReview(front) { const s = getSrs(front); return !!s && s.box === 1; }
+    function isDue(front) { const s = getSrs(front); return !s || s.due <= Date.now(); }
+    function markKnown(front) {
+      const k = srsKey(state.deckId, front);
+      const box = Math.min((state.srs[k]?.box || 0) + 1, 5);
+      state.srs[k] = { box, due: Date.now() + SRS_DAYS[box] * DAY_MS };
+    }
+    function markReview(front) {
+      state.srs[srsKey(state.deckId, front)] = { box: 1, due: Date.now() + SRS_DAYS[1] * DAY_MS };
+    }
+    function resetDeck() {
+      const prefix = `${state.deckId}|`;
+      for (const k of Object.keys(state.srs)) if (k.startsWith(prefix)) delete state.srs[k];
+      saveProgress();
+    }
+    function mergeSrs(local, incoming) {
+      const out = { ...local };
+      for (const [key, c] of Object.entries(incoming || {})) {
+        const l = out[key];
+        if (!l) { out[key] = c; continue; }
+        if ((c.box || 0) > (l.box || 0)) out[key] = c;
+        else if ((c.box || 0) === (l.box || 0) && (c.due || 0) > (l.due || 0)) out[key] = c;
+      }
+      return out;
+    }
+
+    const el = (id) => document.getElementById(id);
+    const deckSel = el("deckSelect"), themeSel = el("themeSelect"), levelSel = el("levelSelect");
+    const reviewChk = el("reviewOnly"), dueChk = el("dueOnly"), autoSpeakChk = el("autoSpeak");
+    const exportBtn = el("exportBtn"), importBtn = el("importBtn"), importFile = el("importFile"), resetBtn = el("resetBtn");
+    const cardWrap = el("cardWrap");
+    const prevBtn = el("prevBtn"), nextBtn = el("nextBtn"), flipBtn = el("flipBtn");
+    const knowBtn = el("knowBtn"), reviewBtn = el("reviewBtn");
+    const counter = el("counter"), pctEl = el("pct"), fillEl = el("progressFill");
+    const titleDeck = el("titleDeck"), titleStats = el("titleStats");
+    const toastEl = el("toast");
+    const filtersBtn = el("filtersBtn"), filtersPanel = el("filtersPanel"), overlay = el("overlay");
+    const voiceBtn = el("voiceBtn"), voiceSheet = el("voiceSheet");
+    const voiceSelect = el("voiceSelect"), voiceTestBtn = el("voiceTestBtn"), voiceResetBtn = el("voiceResetBtn");
+    const voiceHint = el("voiceHint");
+
     let toastTimer;
-    function showToast(m,t=""){toastEl.textContent=m;toastEl.className="toast show "+t;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastEl.classList.remove("show"),2400)}
-    function openFilters(){filtersPanel.classList.add("open");overlay.classList.add("open")}
-    function closeFilters(){filtersPanel.classList.remove("open");overlay.classList.remove("open")}
-    function openVoice(){voiceSheet.classList.add("open");overlay.classList.add("open");renderVoiceSheet()}
-    function closeVoice(){voiceSheet.classList.remove("open");overlay.classList.remove("open")}
-    filtersBtn.onclick=()=>filtersPanel.classList.contains("open")?closeFilters():openFilters();
-    voiceBtn.onclick=()=>voiceSheet.classList.contains("open")?closeVoice():openVoice();
-    overlay.onclick=()=>{closeFilters();closeVoice()};
-    function populateDecks(){deckSel.innerHTML="";for(const d of DECKS){const o=document.createElement("option");o.value=d.id;o.textContent=`${d.flag} ${d.name} (${d.cards.length})`;deckSel.appendChild(o)}state.deckId=DECKS[0]?.id||null;deckSel.value=state.deckId}
-    function populateFilters(){const d=DECKS.find(x=>x.id===state.deckId);if(!d)return;themeSel.innerHTML='<option value="">Tutti i temi</option>';for(const t of getThemesForCards(d.cards)){const o=document.createElement("option");o.value=t.id;o.textContent=`${t.emoji} ${t.name}`;themeSel.appendChild(o)}levelSel.innerHTML='<option value="">Tutti i livelli</option>';for(const l of getLevelsForCards(d.cards)){const o=document.createElement("option");o.value=l.id;o.textContent=l.name;levelSel.appendChild(o)}themeSel.value="";levelSel.value="";state.theme="";state.level="";titleDeck.textContent=`${d.flag} ${d.name}`}
-    function applyFilters(cards){let r=filterCards(cards,{theme:state.theme||undefined,level:state.level||undefined});if(state.reviewOnly)r=r.filter(c=>isReview(c.front));if(state.dueOnly)r=r.filter(c=>isDue(c.front));return r}
-    function rebuildCards(o={}){const d=DECKS.find(x=>x.id===state.deckId);if(!d)return;state.cards=applyFilters(d.cards);if(o.resetIndex!==false){state.index=0;state.flipped=false}else{if(state.index>=state.cards.length)state.index=state.cards.length-1;if(state.index<0)state.index=0}render()}
-    function render(){const total=state.cards.length;if(total===0){cardWrap.innerHTML='<div class="empty"><h2>Nessuna carta</h2><p>Cambia tema o livello.</p></div>';counter.textContent="0 / 0";pctEl.textContent="0%";fillEl.style.width="0%";titleStats.textContent="—";[prevBtn,nextBtn,flipBtn,knowBtn,reviewBtn].forEach(b=>b.disabled=true);return}[prevBtn,nextBtn,flipBtn,knowBtn,reviewBtn].forEach(b=>b.disabled=false);if(state.index<0)state.index=0;if(state.index>=total)state.index=total-1;const c=state.cards[state.index];const t=THEMES.find(x=>x.id===c.theme);const tl=t?`${t.emoji} ${t.name}`:"";const s=getSrs(c.front);const box=s?.box||0;const bl=box===0?"Nuova":box>=5?"Box 5 ⭐":`Box ${box}`;const dl=s?formatDue(s.due):"Subito";cardWrap.innerHTML=`
-      <div class="card ${state.flipped?"flipped":""}" id="cardEl">
-        <button class="card-audio" id="audioBtn" aria-label="Ascolta">🔊</button>
-        <div class="card-face card-front">
-          <span class="card-badge">${c.level||""}</span>
-          ${tl?`<span class="card-badge theme">${tl}</span>`:""}
-          <span class="card-badge box ${box>=2?"active":""}">${bl} · ${dl}</span>
-          ${c.emoji?`<div class="card-emoji">${c.emoji}</div>`:""}
-          <div class="card-text">${escapeHtml(c.front)}</div>
-          ${c.phon?`<div class="card-phon">${escapeHtml(c.phon)}</div>`:""}
-          <div class="card-hint">Tocca per girare</div>
-        </div>
-        <div class="card-face card-back">
-          <span class="card-badge">${c.level||""}</span>
-          ${tl?`<span class="card-badge theme">${tl}</span>`:""}
-          <span class="card-badge box ${box>=2?"active":""}">${bl} · ${dl}</span>
-          ${c.emoji?`<div class="card-emoji">${c.emoji}</div>`:""}
-          <div class="card-text">${escapeHtml(c.back)}</div>
-        </div>
-      </div>`;el("cardEl").addEventListener("click",e=>{if(e.target.closest("#audioBtn"))return;flip()});el("audioBtn").addEventListener("click",e=>{e.stopPropagation();speakCurrent()});counter.textContent=`${state.index+1} / ${total}`;const p=Math.round(((state.index+1)/total)*100);pctEl.textContent=p+"%";fillEl.style.width=p+"%";prevBtn.disabled=state.index===0;nextBtn.disabled=state.index===total-1;flipBtn.textContent=state.flipped?"Fronte":"Gira";titleStats.textContent=`${state.index+1}/${total} · ✓${state.cards.filter(x=>isKnown(x.front)).length} ✗${state.cards.filter(x=>isReview(x.front)).length}`}
-    function formatDue(ts){const d=ts-Date.now();if(d<=0)return"oggi";const days=Math.ceil(d/DAY_MS);if(days===1)return"domani";return`tra ${days}g`}
-    function flip(){state.flipped=!state.flipped;render();if(state.flipped&&state.autoSpeak)speakCurrent()}
-    function next(){if(state.index<state.cards.length-1){state.index++;state.flipped=false;render()}}
-    function prev(){if(state.index>0){state.index--;state.flipped=false;render()}}
-    function markAndAdvance(r){const c=state.cards[state.index];if(!c)return;if(r==="known")markKnown(c.front);if(r==="review")markReview(c.front);saveProgress();const nc=applyFilters(DECKS.find(x=>x.id===state.deckId).cards);const still=nc.some(x=>x.front===c.front);state.cards=nc;if(!still){if(state.index>=state.cards.length)state.index=state.cards.length-1;if(state.index<0)state.index=0}else if(state.index<state.cards.length-1){state.index++}state.flipped=false;render()}
-    function doReset(){if(!confirm(`Azzerare i progressi del mazzo "${state.deckId}"?`))return;resetDeck();rebuildCards();showToast("Progressi azzerati","success");closeFilters()}
-    function currentLang(){return DECKS.find(d=>d.id===state.deckId)?.lang||"en-US"}
-    function speakCurrent(){const c=state.cards[state.index];if(!c||!window.TTS)return;const b=el("audioBtn");if(b)b.classList.add("speaking");TTS.speak(c.back,currentLang()).finally(()=>{const x=el("audioBtn");if(x)x.classList.remove("speaking")})}
-    function renderVoiceSheet(){if(!window.TTS||!TTS.isSupported()){voiceSelect.innerHTML='<option>Non supportato</option>';voiceSelect.disabled=true;voiceTestBtn.disabled=true;voiceResetBtn.disabled=true;voiceHint.textContent="Il dispositivo non supporta la sintesi vocale.";return}const lang=currentLang();const voices=TTS.getVoices(lang);voiceSelect.innerHTML="";if(!voices.length){voiceSelect.innerHTML=`<option>Nessuna voce per ${lang}</option>`;voiceSelect.disabled=true;voiceTestBtn.disabled=true;voiceResetBtn.disabled=true;voiceHint.textContent="Nessuna voce disponibile.";return}const ao=document.createElement("option");ao.value="";ao.textContent="🎯 Automatica (migliore)";voiceSelect.appendChild(ao);for(const v of voices){const o=document.createElement("option");o.value=v.name||v.voiceURI||v.lang;o.textContent=v.name||v.lang;voiceSelect.appendChild(o)}const uc=TTS._state?.native?null:(TTS._state?.selectedByLangWeb?.[lang]||"");voiceSelect.value=uc||"";voiceSelect.disabled=false;voiceTestBtn.disabled=false;voiceResetBtn.disabled=!uc;voiceHint.textContent=`${voices.length} voci per ${lang}.`}
-    voiceSelect.onchange=()=>{const l=currentLang();if(voiceSelect.value)TTS.setVoice(l,voiceSelect.value);else TTS.clearVoiceSelection(l);voiceResetBtn.disabled=!voiceSelect.value;renderVoiceSheet()};
-    voiceTestBtn.onclick=()=>{const c=state.cards[state.index];TTS.speak(c?.back||"Hello, this is a test.",currentLang())};
-    voiceResetBtn.onclick=()=>{TTS.clearVoiceSelection(currentLang());renderVoiceSheet();showToast("Voce automatica ripristinata","success")};
-    exportBtn.onclick=()=>{const p={version:2,exportedAt:new Date().toISOString(),progress:JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}")};const b=new Blob([JSON.stringify(p,null,2)],{type:"application/json"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=`flashcard-backup-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);showToast(`Esportate ${Object.keys(p.progress.srs||{}).length} voci`,"success");closeFilters()};
-    importBtn.onclick=()=>importFile.click();
-    importFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);let inc;if(d.progress?.srs)inc=d.progress.srs;else if(d.srs)inc=d.srs;else if(d&&typeof d==="object"&&!Array.isArray(d))inc=d;else throw new Error("Formato non riconosciuto");const cnt=Object.keys(inc).length;if(!cnt){showToast("File vuoto","error");return}const mg=confirm(`Trovate ${cnt} voci.\n\nOK = FONDI\nAnnulla = SOSTITUISCI`);const cur=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");const nx=mg?{...cur,srs:mergeSrs(cur.srs||{},inc)}:{srs:inc};localStorage.setItem(STORAGE_KEY,JSON.stringify(nx));state.srs=nx.srs||{};rebuildCards({resetIndex:false});showToast(`Importate ${cnt} voci`,"success");closeFilters()}catch(err){showToast("JSON non valido: "+err.message,"error")}};r.readAsText(f);e.target.value=""};
-    resetBtn.onclick=doReset;
-    function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-    deckSel.onchange=()=>{state.deckId=deckSel.value;state.reviewOnly=false;state.dueOnly=false;reviewChk.checked=false;dueChk.checked=false;populateFilters();rebuildCards();if(window.TTS)TTS.preload([currentLang()]).catch(()=>{})};
-    themeSel.onchange=()=>{state.theme=themeSel.value;rebuildCards()};
-    levelSel.onchange=()=>{state.level=levelSel.value;rebuildCards()};
-    reviewChk.onchange=()=>{state.reviewOnly=reviewChk.checked;rebuildCards()};
-    dueChk.onchange=()=>{state.dueOnly=dueChk.checked;rebuildCards()};
-    autoSpeakChk.onchange=()=>{state.autoSpeak=autoSpeakChk.checked};
-    nextBtn.onclick=next;prevBtn.onclick=prev;flipBtn.onclick=flip;
-    knowBtn.onclick=()=>markAndAdvance("known");
-    reviewBtn.onclick=()=>markAndAdvance("review");
-    document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="SELECT"||t==="INPUT"||t==="TEXTAREA")return;if(e.key==="ArrowRight")next();else if(e.key==="ArrowLeft")prev();else if(e.key===" "){e.preventDefault();flip()}else if(e.key.toLowerCase()==="s")speakCurrent()});
-    let tx=0,ty=0,tm=false;
-    cardWrap.addEventListener("touchstart",e=>{if(e.target.closest("button"))return;tx=e.touches[0].clientX;ty=e.touches[0].clientY;tm=false},{passive:true});
-    cardWrap.addEventListener("touchmove",e=>{if(!tx)return;const dx=Math.abs(e.touches[0].clientX-tx),dy=Math.abs(e.touches[0].clientY-ty);if(dx>10||dy>10)tm=true},{passive:true});
-    cardWrap.addEventListener("touchend",e=>{if(!tx||tm){tx=0;return}const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;tx=0;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){e.preventDefault();if(dx>0)prev();else next()}},{passive:false});
-    state.srs=loadProgress();state.autoSpeak=autoSpeakChk.checked;
-    populateDecks();populateFilters();rebuildCards();
-    if(window.TTS)TTS.onVoicesReady(()=>{if(voiceSheet.classList.contains("open"))renderVoiceSheet()});
+    function showToast(msg, type = "") {
+      toastEl.textContent = msg;
+      toastEl.className = "toast show " + type;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2400);
+    }
+
+    function openFilters() { filtersPanel.classList.add("open"); overlay.classList.add("open"); }
+    function closeFilters() { filtersPanel.classList.remove("open"); overlay.classList.remove("open"); }
+    function openVoice() { voiceSheet.classList.add("open"); overlay.classList.add("open"); renderVoiceSheet(); }
+    function closeVoice() { voiceSheet.classList.remove("open"); overlay.classList.remove("open"); }
+    filtersBtn.onclick = () => filtersPanel.classList.contains("open") ? closeFilters() : openFilters();
+    voiceBtn.onclick = () => voiceSheet.classList.contains("open") ? closeVoice() : openVoice();
+    overlay.onclick = () => { closeFilters(); closeVoice(); };
+
+    function populateDecks() {
+      deckSel.innerHTML = "";
+      for (const deck of DECKS) {
+        const opt = document.createElement("option");
+        opt.value = deck.id;
+        opt.textContent = `${deck.flag} ${deck.name} (${deck.cards.length})`;
+        deckSel.appendChild(opt);
+      }
+      state.deckId = DECKS[0]?.id || null;
+      deckSel.value = state.deckId;
+    }
+
+    function populateFilters() {
+      const deck = DECKS.find(d => d.id === state.deckId);
+      if (!deck) return;
+      themeSel.innerHTML = '<option value="">Tutti i temi</option>';
+      for (const t of getThemesForCards(deck.cards)) {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = `${t.emoji} ${t.name}`;
+        themeSel.appendChild(opt);
+      }
+      levelSel.innerHTML = '<option value="">Tutti i livelli</option>';
+      for (const l of getLevelsForCards(deck.cards)) {
+        const opt = document.createElement("option");
+        opt.value = l.id;
+        opt.textContent = l.name;
+        levelSel.appendChild(opt);
+      }
+      themeSel.value = ""; levelSel.value = "";
+      state.theme = ""; state.level = "";
+      titleDeck.textContent = `${deck.flag} ${deck.name}`;
+    }
+
+    function applyFilters(cards) {
+      let r = filterCards(cards, {
+        theme: state.theme || undefined,
+        level: state.level || undefined,
+      });
+      if (state.reviewOnly) r = r.filter(c => isReview(c.front));
+      if (state.dueOnly) r = r.filter(c => isDue(c.front));
+      return r;
+    }
+
+    function rebuildCards({ resetIndex = true } = {}) {
+      const deck = DECKS.find(d => d.id === state.deckId);
+      if (!deck) return;
+      state.cards = applyFilters(deck.cards);
+      if (resetIndex) { state.index = 0; state.flipped = false; }
+      else {
+        if (state.index >= state.cards.length) state.index = state.cards.length - 1;
+        if (state.index < 0) state.index = 0;
+      }
+      render();
+    }
+
+    function render() {
+      const total = state.cards.length;
+      if (total === 0) {
+        cardWrap.innerHTML = `<div class="empty"><h2>Nessuna carta</h2><p>Cambia tema o livello.</p></div>`;
+        counter.textContent = "0 / 0"; pctEl.textContent = "0%"; fillEl.style.width = "0%";
+        titleStats.textContent = "—";
+        [prevBtn, nextBtn, flipBtn, knowBtn, reviewBtn].forEach(b => b.disabled = true);
+        return;
+      }
+      [prevBtn, nextBtn, flipBtn, knowBtn, reviewBtn].forEach(b => b.disabled = false);
+      if (state.index < 0) state.index = 0;
+      if (state.index >= total) state.index = total - 1;
+
+      const card = state.cards[state.index];
+      const theme = THEMES.find(t => t.id === card.theme);
+      const themeLabel = theme ? `${theme.emoji} ${theme.name}` : "";
+      const s = getSrs(card.front);
+      const box = s?.box || 0;
+      const boxLabel = box === 0 ? "Nuova" : box >= 5 ? "Box 5 ⭐" : `Box ${box}`;
+      const dueLabel = s ? formatDue(s.due) : "Subito";
+
+      cardWrap.innerHTML = `
+        <div class="card ${state.flipped ? "flipped" : ""}" id="cardEl">
+          <button class="card-audio" id="audioBtn" aria-label="Ascolta">🔊</button>
+          <div class="card-face card-front">
+            <span class="card-badge">${card.level || ""}</span>
+            ${themeLabel ? `<span class="card-badge theme">${themeLabel}</span>` : ""}
+            <span class="card-badge box ${box >= 2 ? "active" : ""}">${boxLabel} · ${dueLabel}</span>
+            ${card.emoji ? `<div class="card-emoji">${card.emoji}</div>` : ""}
+            <div class="card-text">${escapeHtml(card.front)}</div>
+            ${card.phon ? `<div class="card-phon">${escapeHtml(card.phon)}</div>` : ""}
+            <div class="card-hint">Tocca per girare</div>
+          </div>
+          <div class="card-face card-back">
+            <span class="card-badge">${card.level || ""}</span>
+            ${themeLabel ? `<span class="card-badge theme">${themeLabel}</span>` : ""}
+            <span class="card-badge box ${box >= 2 ? "active" : ""}">${boxLabel} · ${dueLabel}</span>
+            ${card.emoji ? `<div class="card-emoji">${card.emoji}</div>` : ""}
+            <div class="card-text">${escapeHtml(card.back)}</div>
+          </div>
+        </div>`;
+
+      el("cardEl").addEventListener("click", (e) => {
+        if (e.target.closest("#audioBtn")) return;
+        flip();
+      });
+      el("audioBtn").addEventListener("click", (e) => { e.stopPropagation(); speakCurrent(); });
+
+      counter.textContent = `${state.index + 1} / ${total}`;
+      const pct = Math.round(((state.index + 1) / total) * 100);
+      pctEl.textContent = `${pct}%`;
+      fillEl.style.width = `${pct}%`;
+      prevBtn.disabled = state.index === 0;
+      nextBtn.disabled = state.index === total - 1;
+      flipBtn.textContent = state.flipped ? "Fronte" : "Gira";
+      titleStats.textContent = `${state.index + 1}/${total} · ✓${state.cards.filter(c => isKnown(c.front)).length} ✗${state.cards.filter(c => isReview(c.front)).length}`;
+    }
+
+    function formatDue(ts) {
+      const diff = ts - Date.now();
+      if (diff <= 0) return "oggi";
+      const days = Math.ceil(diff / DAY_MS);
+      if (days === 1) return "domani";
+      return `tra ${days}g`;
+    }
+
+    function flip() {
+      state.flipped = !state.flipped;
+      render();
+      if (state.flipped && state.autoSpeak) speakCurrent();
+    }
+    function next() {
+      if (state.index < state.cards.length - 1) { state.index++; state.flipped = false; render(); }
+    }
+    function prev() {
+      if (state.index > 0) { state.index--; state.flipped = false; render(); }
+    }
+    function markAndAdvance(result) {
+      const card = state.cards[state.index];
+      if (!card) return;
+      if (result === "known") markKnown(card.front);
+      if (result === "review") markReview(card.front);
+      saveProgress();
+      const newCards = applyFilters(DECKS.find(d => d.id === state.deckId).cards);
+      const stillPresent = newCards.some(c => c.front === card.front);
+      state.cards = newCards;
+      if (!stillPresent) {
+        if (state.index >= state.cards.length) state.index = state.cards.length - 1;
+        if (state.index < 0) state.index = 0;
+      } else if (state.index < state.cards.length - 1) {
+        state.index++;
+      }
+      state.flipped = false;
+      render();
+    }
+    function doReset() {
+      if (!confirm(`Azzerare i progressi del mazzo "${state.deckId}"?`)) return;
+      resetDeck(); rebuildCards();
+      showToast("Progressi azzerati", "success");
+      closeFilters();
+    }
+
+    function currentLang() {
+      return DECKS.find(d => d.id === state.deckId)?.lang || "en-US";
+    }
+    function speakCurrent() {
+      const card = state.cards[state.index];
+      if (!card || !window.TTS) return;
+      const btn = el("audioBtn");
+      if (btn) btn.classList.add("speaking");
+      TTS.speak(card.back, currentLang()).finally(() => {
+        const b = el("audioBtn");
+        if (b) b.classList.remove("speaking");
+      });
+    }
+
+    function renderVoiceSheet() {
+      if (!window.TTS || !TTS.isSupported()) {
+        voiceSelect.innerHTML = '<option>Non supportato</option>';
+        voiceSelect.disabled = true;
+        voiceTestBtn.disabled = true;
+        voiceResetBtn.disabled = true;
+        voiceHint.textContent = "Il dispositivo non supporta la sintesi vocale.";
+        return;
+      }
+      const lang = currentLang();
+      const voices = TTS.getVoices(lang);
+      voiceSelect.innerHTML = "";
+      if (!voices.length) {
+        voiceSelect.innerHTML = `<option>Nessuna voce per ${lang}</option>`;
+        voiceSelect.disabled = true;
+        voiceTestBtn.disabled = true;
+        voiceResetBtn.disabled = true;
+        voiceHint.textContent = "Nessuna voce disponibile per questa lingua.";
+        return;
+      }
+      const autoOpt = document.createElement("option");
+      autoOpt.value = "";
+      autoOpt.textContent = "🎯 Automatica (migliore)";
+      voiceSelect.appendChild(autoOpt);
+      for (const v of voices) {
+        const opt = document.createElement("option");
+        opt.value = v.name || v.voiceURI || v.lang;
+        opt.textContent = v.name || v.lang;
+        voiceSelect.appendChild(opt);
+      }
+      const userChoice = TTS._state?.native ? null : (TTS._state?.selectedByLangWeb?.[lang] || "");
+      voiceSelect.value = userChoice || "";
+      voiceSelect.disabled = false;
+      voiceTestBtn.disabled = false;
+      voiceResetBtn.disabled = !userChoice;
+      voiceHint.textContent = `${voices.length} voci disponibili per ${lang}.`;
+    }
+
+    voiceSelect.onchange = () => {
+      const lang = currentLang();
+      if (voiceSelect.value) TTS.setVoice(lang, voiceSelect.value);
+      else TTS.clearVoiceSelection(lang);
+      voiceResetBtn.disabled = !voiceSelect.value;
+      renderVoiceSheet();
+    };
+    voiceTestBtn.onclick = () => {
+      const card = state.cards[state.index];
+      TTS.speak(card?.back || "Hello, this is a test.", currentLang());
+    };
+    voiceResetBtn.onclick = () => {
+      TTS.clearVoiceSelection(currentLang());
+      renderVoiceSheet();
+      showToast("Voce automatica ripristinata", "success");
+    };
+
+    exportBtn.onclick = () => {
+      const payload = {
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        progress: JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"),
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `flashcard-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast(`Esportate ${Object.keys(payload.progress.srs || {}).length} voci`, "success");
+      closeFilters();
+    };
+
+    importBtn.onclick = () => importFile.click();
+    importFile.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          let incoming;
+          if (data.progress?.srs) incoming = data.progress.srs;
+          else if (data.srs) incoming = data.srs;
+          else if (data && typeof data === "object" && !Array.isArray(data)) incoming = data;
+          else throw new Error("Formato non riconosciuto");
+          const count = Object.keys(incoming).length;
+          if (!count) { showToast("File vuoto", "error"); return; }
+          const merge = confirm(`Trovate ${count} voci.\n\nOK = FONDI\nAnnulla = SOSTITUISCI`);
+          const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+          const next = merge
+            ? { ...current, srs: mergeSrs(current.srs || {}, incoming) }
+            : { srs: incoming };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+          state.srs = next.srs || {};
+          rebuildCards({ resetIndex: false });
+          showToast(`Importate ${count} voci`, "success");
+          closeFilters();
+        } catch (err) {
+          showToast("JSON non valido: " + err.message, "error");
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    };
+
+    resetBtn.onclick = doReset;
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    deckSel.onchange = () => {
+      state.deckId = deckSel.value;
+      state.reviewOnly = false; state.dueOnly = false;
+      reviewChk.checked = false; dueChk.checked = false;
+      populateFilters();
+      rebuildCards();
+      if (window.TTS) TTS.preload([currentLang()]).catch(() => {});
+    };
+    themeSel.onchange = () => { state.theme = themeSel.value; rebuildCards(); };
+    levelSel.onchange = () => { state.level = levelSel.value; rebuildCards(); };
+    reviewChk.onchange = () => { state.reviewOnly = reviewChk.checked; rebuildCards(); };
+    dueChk.onchange = () => { state.dueOnly = dueChk.checked; rebuildCards(); };
+    autoSpeakChk.onchange = () => { state.autoSpeak = autoSpeakChk.checked; };
+    nextBtn.onclick = next;
+    prevBtn.onclick = prev;
+    flipBtn.onclick = flip;
+    knowBtn.onclick = () => markAndAdvance("known");
+    reviewBtn.onclick = () => markAndAdvance("review");
+
+    document.addEventListener("keydown", (e) => {
+      const tag = e.target.tagName;
+      if (tag === "SELECT" || tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "ArrowRight") next();
+      else if (e.key === "ArrowLeft") prev();
+      else if (e.key === " ") { e.preventDefault(); flip(); }
+      else if (e.key.toLowerCase() === "s") speakCurrent();
+    });
+
+    // ---- SWIPE ----
+    let touchStartX = 0, touchStartY = 0, touchMoved = false;
+    cardWrap.addEventListener("touchstart", (e) => {
+      if (e.target.closest("button")) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchMoved = false;
+    }, { passive: true });
+    cardWrap.addEventListener("touchmove", (e) => {
+      if (!touchStartX) return;
+      const dx = Math.abs(e.touches[0].clientX - touchStartX);
+      const dy = Math.abs(e.touches[0].clientY - touchStartY);
+      if (dx > 10 || dy > 10) touchMoved = true;
+    }, { passive: true });
+    cardWrap.addEventListener("touchend", (e) => {
+      if (!touchStartX || touchMoved) { touchStartX = 0; return; }
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      touchStartX = 0;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        e.preventDefault();
+        if (dx > 0) prev(); else next();
+      }
+    }, { passive: false });
+
+    state.srs = loadProgress();
+    state.autoSpeak = autoSpeakChk.checked;
+    populateDecks();
+    populateFilters();
+    rebuildCards();
+
+    if (window.TTS) {
+      TTS.onVoicesReady(() => {
+        if (voiceSheet.classList.contains("open")) renderVoiceSheet();
+      });
+    }
   })();
   </script>
 </body>
