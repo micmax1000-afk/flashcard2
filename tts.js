@@ -1,109 +1,226 @@
 /* =========================================================================
- * tts.js — Sintesi vocale naturale con fallback multipli
+ * tts.js — Sintesi vocale con precaricamento, cache e selezione voce
  * Da caricare DOPO data.js e meta.js, PRIMA dello script dell'app.
  *
- * Espone:
- *   TTS.speak(text, lang)  → Promise<void>
+ * API pubblica:
+ *   TTS.speak(text, lang)             → Promise<void>
  *   TTS.stop()
- *   TTS.pickBestVoice(lang)
- *   TTS.onVoicesReady(cb)
+ *   TTS.pickBestVoice(lang)           → SpeechSynthesisVoice | null
+ *   TTS.getVoices(lang?)              → SpeechSynthesisVoice[]
+ *   TTS.getSelectedVoice(lang)        → SpeechSynthesisVoice | null
+ *   TTS.setVoice(lang, voiceName)     → salva la scelta per la lingua
+ *   TTS.clearVoiceSelection(lang)
+ *   TTS.onVoicesReady(cb)             → eseguito quando le voci sono pronte
+ *   TTS.preload()                     → Promise: "riscalda" il motore TTS
+ *   TTS.isReady()                     → boolean
+ *   TTS.isSupported()                 → boolean
+ *   TTS.openAIConfigured()            → boolean
  *
- * Configurazione opzionale (OpenAI TTS, BYOK):
- *   window.OPENAI_API_KEY = "sk-..."   (vedi avvertenze in fondo)
+ * Configurazione opzionale:
+ *   window.OPENAI_API_KEY = "sk-..."
  * ========================================================================= */
 
 (function () {
   "use strict";
 
-  if (!("speechSynthesis" in window)) {
-    console.warn("[tts.js] Web Speech API non supportata da questo browser.");
+  // ---------------------------------------------------------------------
+  // COSTANTI
+  // ---------------------------------------------------------------------
+  const VOICE_STORAGE_KEY = "flashcard-voice-prefs-v1";
+  const PRELOAD_TEXT = "Hello";
+
+  const VOICE_PATTERNS = [
+    /Online \(Natural\)/i,          // Edge Windows — migliori gratuite
+    /Natural/i,
+    /Google.*(US|UK|Neural)/i,
+    /Premium/i,                     // Apple
+    /Enhanced/i,                    // Apple
+    /Siri/i,
+  ];
+
+  // ---------------------------------------------------------------------
+  // STATO INTERNO
+  // ---------------------------------------------------------------------
+  const state = {
+    supported: "speechSynthesis" in window,
+    voicesReady: false,
+    allVoices: [],
+    voicesByLang: new Map(),        // "en" → [voices]
+    selectedByLang: {},             // "en-US" → voiceName
+    preloadedLangs: new Set(),
+    currentAudio: null,
+    readyCallbacks: [],
+  };
+
+  // ---------------------------------------------------------------------
+  // PERSISTENZA PREFERENZE VOCE
+  // ---------------------------------------------------------------------
+  function loadPrefs() {
+    try {
+      const raw = localStorage.getItem(VOICE_STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data && typeof data === "object") {
+        state.selectedByLang = data;
+      }
+    } catch (err) {
+      console.warn("[tts.js] pref lettura fallita:", err);
+    }
+  }
+
+  function savePrefs() {
+    try {
+      localStorage.setItem(VOICE_STORAGE_KEY, JSON.stringify(state.selectedByLang));
+    } catch (err) {
+      console.warn("[tts.js] pref scrittura fallita:", err);
+    }
   }
 
   // ---------------------------------------------------------------------
-  // 1. SELEZIONE VOCE MIGLIORE
+  // CARICAMENTO E CACHE DELLE VOCI
   // ---------------------------------------------------------------------
-  // Pattern in ordine di priorità: voci neurali → Enhanced/Premium → default
-  const VOICE_PATTERNS = [
-    /Online \(Natural\)/i,          // Edge Windows — le migliori gratuite
-    /Natural/i,                     // altre "Natural"
-    /Google.*(US|UK|Neural)/i,      // Chrome online
-    /Premium/i,                     // Apple Premium (iOS/macOS)
-    /Enhanced/i,                    // Apple Enhanced
-    /Siri/i,                        // Apple Siri
-  ];
+  function groupVoicesByLang(voices) {
+    const map = new Map();
+    for (const v of voices) {
+      const prefix = (v.lang || "").split("-")[0].toLowerCase();
+      if (!map.has(prefix)) map.set(prefix, []);
+      map.get(prefix).push(v);
+    }
+    return map;
+  }
+
+  function refreshVoices() {
+    if (!state.supported) return;
+    const voices = speechSynthesis.getVoices() || [];
+    if (!voices.length) return;
+
+    state.allVoices = voices.slice();
+    state.voicesByLang = groupVoicesByLang(voices);
+    state.voicesReady = true;
+
+    // Debug utile in console
+    const groups = [...state.voicesByLang.entries()]
+      .map(([k, v]) => `${k}:${v.length}`)
+      .join(", ");
+    console.log(`[tts.js] ${voices.length} voci caricate (${groups})`);
+
+    while (state.readyCallbacks.length) {
+      try { state.readyCallbacks.shift()(); } catch (e) { console.warn(e); }
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // SELEZIONE VOCE MIGLIORE
+  // ---------------------------------------------------------------------
+  function langPrefix(lang) {
+    return (lang || "en-US").split("-")[0].toLowerCase();
+  }
 
   function pickBestVoice(lang) {
-    if (!("speechSynthesis" in window)) return null;
-    const voices = speechSynthesis.getVoices();
+    if (!state.voicesReady) return null;
+    const prefix = langPrefix(lang);
+    const voices = state.voicesByLang.get(prefix) || [];
     if (!voices.length) return null;
 
-    const prefix = (lang || "en-US").split("-")[0].toLowerCase();
+    // Prima la voce scelta dall'utente (match esatto o per prefisso)
+    const selectedName = state.selectedByLang[lang];
+    if (selectedName) {
+      const exact = voices.find((v) => v.name === selectedName);
+      if (exact) return exact;
+    }
 
-    // 1) Cerca voci con nome prioritario e lingua corretta
+    // Poi le voci prioritarie per nome
     for (const re of VOICE_PATTERNS) {
-      const match = voices.find(
-        (v) => v.lang.toLowerCase().startsWith(prefix) && re.test(v.name)
-      );
+      const match = voices.find((v) => re.test(v.name));
       if (match) return match;
     }
 
-    // 2) Fallback: prima voce con lingua corretta
-    const anyMatch = voices.find((v) =>
-      v.lang.toLowerCase().startsWith(prefix)
-    );
-    if (anyMatch) return anyMatch;
-
-    // 3) Ultimo fallback: lingua esatta o voce di default
-    return voices[0] || null;
+    // Fallback: prima voce della lingua
+    return voices[0];
   }
 
-  // ---------------------------------------------------------------------
-  // 2. GESTIONE VOCI ASINCRONE
-  // ---------------------------------------------------------------------
-  // Su Chrome e Safari, getVoices() restituisce [] al primo call.
-  // onvoiceschanged scatta quando il browser ha caricato le voci.
-  let voicesReady = false;
-  const readyCallbacks = [];
-
-  function markVoicesReady() {
-    if (voicesReady) return;
-    voicesReady = true;
-    while (readyCallbacks.length) {
-      try { readyCallbacks.shift()(); } catch (e) { console.warn(e); }
-    }
+  function getVoices(lang) {
+    if (!state.voicesReady) return [];
+    if (!lang) return state.allVoices.slice();
+    const prefix = langPrefix(lang);
+    return (state.voicesByLang.get(prefix) || []).slice();
   }
 
-  function onVoicesReady(cb) {
-    if (voicesReady) cb();
-    else readyCallbacks.push(cb);
+  function getSelectedVoice(lang) {
+    return pickBestVoice(lang);
   }
 
-  if ("speechSynthesis" in window) {
-    // Se già pronte
-    if (speechSynthesis.getVoices().length) {
-      markVoicesReady();
+  function setVoice(lang, voiceName) {
+    if (!voiceName) {
+      delete state.selectedByLang[lang];
     } else {
-      speechSynthesis.onvoiceschanged = markVoicesReady;
-      // Sicurezza: dopo 1.5s considera comunque pronta la lista
-      setTimeout(markVoicesReady, 1500);
+      state.selectedByLang[lang] = voiceName;
+    }
+    savePrefs();
+    console.log(`[tts.js] Voce per ${lang}: ${voiceName || "(auto)"}`);
+  }
+
+  function clearVoiceSelection(lang) {
+    delete state.selectedByLang[lang];
+    savePrefs();
+  }
+
+  // ---------------------------------------------------------------------
+  // PRECARICAMENTO
+  // ---------------------------------------------------------------------
+  // "Riscalda" il motore TTS con un'utterance a volume 0,
+  // riducendo la latenza alla prima vera pronuncia.
+  function preloadLang(lang) {
+    if (!state.supported) return Promise.resolve();
+    if (state.preloadedLangs.has(lang)) return Promise.resolve();
+
+    return new Promise((resolve) => {
+      try {
+        const utter = new SpeechSynthesisUtterance(PRELOAD_TEXT);
+        utter.lang = lang;
+        utter.volume = 0;
+        utter.rate = 1;
+        const voice = pickBestVoice(lang);
+        if (voice) utter.voice = voice;
+
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          state.preloadedLangs.add(lang);
+          resolve();
+        };
+        utter.onend = finish;
+        utter.onerror = finish;
+        setTimeout(finish, 800); // timeout di sicurezza
+
+        speechSynthesis.cancel();
+        speechSynthesis.speak(utter);
+      } catch (err) {
+        console.warn("[tts.js] preload errore:", err);
+        resolve();
+      }
+    });
+  }
+
+  async function preload(langs) {
+    const list = Array.isArray(langs) ? langs : ["en-US", "es-ES", "fr-FR", "de-DE"];
+    for (const lang of list) {
+      await preloadLang(lang);
     }
   }
 
   // ---------------------------------------------------------------------
-  // 3. AUDIO PLAYER (per OpenAI TTS o blob esterni)
+  // OPENAI TTS (opzionale)
   // ---------------------------------------------------------------------
-  let currentAudio = null;
   function stopAudio() {
-    if (currentAudio) {
-      try { currentAudio.pause(); } catch (_) {}
-      try { URL.revokeObjectURL(currentAudio.src); } catch (_) {}
-      currentAudio = null;
+    if (state.currentAudio) {
+      try { state.currentAudio.pause(); } catch (_) {}
+      try { URL.revokeObjectURL(state.currentAudio.src); } catch (_) {}
+      state.currentAudio = null;
     }
   }
 
-  // ---------------------------------------------------------------------
-  // 4. OPENAI TTS (opzionale, BYOK)
-  // ---------------------------------------------------------------------
   async function speakWithOpenAI(text, lang) {
     const key = window.OPENAI_API_KEY;
     if (!key) return false;
@@ -117,7 +234,7 @@
         },
         body: JSON.stringify({
           model: "tts-1",
-          voice: "nova",       // alloy | echo | fable | onyx | nova | shimmer
+          voice: "nova",
           input: text,
           speed: 0.95,
         }),
@@ -126,9 +243,9 @@
 
       const blob = await res.blob();
       stopAudio();
-      currentAudio = new Audio(URL.createObjectURL(blob));
-      currentAudio.lang = lang || "en-US";
-      await currentAudio.play();
+      state.currentAudio = new Audio(URL.createObjectURL(blob));
+      state.currentAudio.lang = lang || "en-US";
+      await state.currentAudio.play();
       return true;
     } catch (err) {
       console.warn("[tts.js] OpenAI TTS fallito, fallback Web Speech:", err);
@@ -137,15 +254,15 @@
   }
 
   // ---------------------------------------------------------------------
-  // 5. WEB SPEECH API
+  // WEB SPEECH
   // ---------------------------------------------------------------------
   function speakWebSpeech(text, lang) {
     return new Promise((resolve) => {
-      if (!("speechSynthesis" in window)) return resolve();
+      if (!state.supported) return resolve();
 
       const utter = new SpeechSynthesisUtterance(text);
       utter.lang = lang || "en-US";
-      utter.rate = 0.95;   // più lento per lo studio
+      utter.rate = 0.95;
       utter.pitch = 1.0;
       utter.volume = 1.0;
 
@@ -164,29 +281,79 @@
   }
 
   // ---------------------------------------------------------------------
-  // 6. API PUBBLICA
+  // API PUBBLICA
   // ---------------------------------------------------------------------
   async function speak(text, lang) {
     if (!text) return;
-    // Prova prima OpenAI (se configurato), altrimenti Web Speech
     const usedOpenAI = await speakWithOpenAI(text, lang);
-    if (!usedOpenAI) {
-      await speakWebSpeech(text, lang);
-    }
+    if (!usedOpenAI) await speakWebSpeech(text, lang);
   }
 
   function stop() {
-    if ("speechSynthesis" in window) speechSynthesis.cancel();
+    if (state.supported) speechSynthesis.cancel();
     stopAudio();
   }
 
+  function onVoicesReady(cb) {
+    if (state.voicesReady) {
+      try { cb(); } catch (e) { console.warn(e); }
+    } else {
+      state.readyCallbacks.push(cb);
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // INIZIALIZZAZIONE
+  // ---------------------------------------------------------------------
+  loadPrefs();
+
+  if (state.supported) {
+    // Primo tentativo sincrono
+    refreshVoices();
+
+    // Evento ufficiale
+    if (typeof speechSynthesis.onvoiceschanged !== "undefined") {
+      speechSynthesis.onvoiceschanged = refreshVoices;
+    }
+
+    // Polling di sicurezza (alcuni browser non sparano l'evento)
+    let pollCount = 0;
+    const poll = setInterval(() => {
+      pollCount++;
+      if (state.voicesReady || pollCount > 40) {
+        clearInterval(poll);
+        return;
+      }
+      refreshVoices();
+    }, 250);
+
+    // Precarica le lingue principali in background appena pronte
+    onVoicesReady(() => {
+      setTimeout(() => {
+        preload(["en-US", "es-ES", "fr-FR", "de-DE"]).catch(() => {});
+      }, 300);
+    });
+  } else {
+    console.warn("[tts.js] Web Speech API non supportata.");
+  }
+
+  // ---------------------------------------------------------------------
+  // EXPORT
+  // ---------------------------------------------------------------------
   window.TTS = {
     speak,
     stop,
     pickBestVoice,
+    getVoices,
+    getSelectedVoice,
+    setVoice,
+    clearVoiceSelection,
     onVoicesReady,
-    getVoices: () => ("speechSynthesis" in window ? speechSynthesis.getVoices() : []),
-    isSupported: () => "speechSynthesis" in window,
+    preload,
+    isReady: () => state.voicesReady,
+    isSupported: () => state.supported,
     openAIConfigured: () => !!window.OPENAI_API_KEY,
+    // Debug
+    _state: state,
   };
 })();

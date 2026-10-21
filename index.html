@@ -17,6 +17,7 @@
       --accent-dark: #2563eb;
       --success: #10b981;
       --danger: #ef4444;
+      --warn: #f59e0b;
       --border: #e5e7eb;
       --shadow: 0 4px 16px rgba(0,0,0,.08);
       --radius: 16px;
@@ -74,6 +75,84 @@
     .extras .tool-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
     .extras .spacer { margin-left: auto; }
 
+    /* ---------- PANNELLO VOCE ---------- */
+    .voice-panel {
+      width: 100%; max-width: 720px;
+      margin-bottom: 12px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .voice-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; font-size: 0.85rem;
+      cursor: pointer; user-select: none;
+    }
+    .voice-header:hover { background: var(--bg); }
+    .voice-header .badge {
+      margin-left: auto;
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--border);
+      color: var(--muted);
+      font-weight: 600;
+      max-width: 60%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .voice-header .badge.good { background: var(--success); color: #fff; }
+    .voice-header .badge.warn { background: var(--warn); color: #fff; }
+    .voice-header .chev {
+      transition: transform .2s ease;
+      font-size: 0.7rem; color: var(--muted);
+    }
+    .voice-panel.open .voice-header .chev { transform: rotate(90deg); }
+
+    .voice-body {
+      display: none;
+      padding: 0 12px 12px;
+      border-top: 1px solid var(--border);
+    }
+    .voice-panel.open .voice-body { display: block; }
+
+    .voice-row {
+      display: flex; gap: 8px; align-items: center;
+      margin-top: 10px;
+    }
+    .voice-row select {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+    .voice-row .small-btn {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      font-size: 0.8rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .voice-row .small-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .voice-row .small-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .voice-row .small-btn.primary:hover { background: var(--accent-dark); color: #fff; }
+
+    .voice-hint {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .voice-hint strong { color: var(--text); }
+
+    /* ---------- PROGRESSO ---------- */
     .progress {
       width: 100%; max-width: 720px;
       display: flex; align-items: center; gap: 12px;
@@ -89,6 +168,7 @@
       width: 0%; transition: width .3s ease;
     }
 
+    /* ---------- CARD ---------- */
     .card-wrap {
       width: 100%; max-width: 720px;
       perspective: 1200px; margin-bottom: 16px;
@@ -133,7 +213,6 @@
       font-size: 0.75rem; color: var(--muted);
     }
 
-    /* Pulsante audio in alto a destra */
     .card-audio {
       position: absolute;
       top: 10px; right: 10px;
@@ -184,7 +263,6 @@
       text-align: center; line-height: 1.6;
     }
 
-    /* Toast per feedback (import/export) */
     .toast {
       position: fixed;
       bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
@@ -195,6 +273,7 @@
       opacity: 0; pointer-events: none;
       transition: opacity .25s ease, transform .25s ease;
       z-index: 1000;
+      max-width: 90vw;
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.success { background: var(--success); }
@@ -208,7 +287,7 @@
     <p>Impara le lingue — tema, difficoltà, ripetizione spaziata</p>
   </header>
 
-  <!-- Selettori -->
+  <!-- Selettori principali -->
   <div class="controls">
     <div>
       <label for="deckSelect">Mazzo</label>
@@ -224,7 +303,7 @@
     </div>
   </div>
 
-  <!-- Filtri extra + strumenti -->
+  <!-- Filtri + strumenti -->
   <div class="extras">
     <label>
       <input type="checkbox" id="reviewOnly" />
@@ -243,6 +322,27 @@
     <button class="tool-btn" id="importBtn" title="Importa progressi da JSON">📥 Importa</button>
     <button class="tool-btn danger" id="resetBtn" title="Azzera progressi del mazzo corrente">↺ Reset</button>
     <input type="file" id="importFile" accept="application/json,.json" hidden />
+  </div>
+
+  <!-- Pannello voce TTS -->
+  <div class="voice-panel" id="voicePanel">
+    <div class="voice-header" id="voiceHeader">
+      <span class="chev">▶</span>
+      <span>🎙️ Voce TTS</span>
+      <span class="badge" id="voiceBadge">Caricamento…</span>
+    </div>
+    <div class="voice-body">
+      <div class="voice-row">
+        <select id="voiceSelect"></select>
+        <button class="small-btn" id="voiceTestBtn">▶ Prova</button>
+        <button class="small-btn" id="voiceResetBtn" title="Torna alla scelta automatica">Auto</button>
+      </div>
+      <div class="voice-hint" id="voiceHint">
+        Le voci <strong>Natural</strong> / <strong>Premium</strong> / <strong>Enhanced</strong>
+        hanno qualità migliore. Su Edge sono disponibili le voci
+        <strong>Microsoft … Online (Natural)</strong>.
+      </div>
+    </div>
   </div>
 
   <!-- Progresso -->
@@ -268,14 +368,13 @@
 
   <footer><span id="stats">—</span></footer>
 
-  <!-- Toast -->
   <div id="toast" class="toast"></div>
 
   <!-- ============================================================
        ORDINE OBBLIGATORIO:
        1) data.js  → DECKS
        2) meta.js  → temi + livelli + nuove carte
-       3) tts.js   → sintesi vocale
+       3) tts.js   → sintesi vocale con precaricamento
        4) script app
        ============================================================ -->
   <script src="data.js"></script>
@@ -361,9 +460,6 @@
       saveProgress();
     }
 
-    // ================================================================
-    // MERGE (usato da import)
-    // ================================================================
     function mergeSrs(local, incoming) {
       const out = { ...local };
       for (const [key, c] of Object.entries(incoming || {})) {
@@ -400,6 +496,15 @@
     const statsEl    = document.getElementById("stats");
     const toastEl    = document.getElementById("toast");
 
+    // Voice panel
+    const voicePanel  = document.getElementById("voicePanel");
+    const voiceHeader = document.getElementById("voiceHeader");
+    const voiceBadge  = document.getElementById("voiceBadge");
+    const voiceSelect = document.getElementById("voiceSelect");
+    const voiceTestBtn   = document.getElementById("voiceTestBtn");
+    const voiceResetBtn  = document.getElementById("voiceResetBtn");
+    const voiceHint      = document.getElementById("voiceHint");
+
     // ================================================================
     // TOAST
     // ================================================================
@@ -414,7 +519,7 @@
     }
 
     // ================================================================
-    // POPOLAMENTO UI
+    // POPOLAMENTO UI PRINCIPALE
     // ================================================================
     function populateDecks() {
       deckSel.innerHTML = "";
@@ -455,6 +560,155 @@
     }
 
     // ================================================================
+    // PANNELLO VOCE
+    // ================================================================
+    function currentLang() {
+      const deck = DECKS.find((d) => d.id === state.deckId);
+      return deck?.lang || "en-US";
+    }
+
+    function voiceCategory(name) {
+      if (/Online \(Natural\)/i.test(name)) return "natural";
+      if (/Natural/i.test(name))            return "natural";
+      if (/Premium/i.test(name))            return "premium";
+      if (/Enhanced/i.test(name))           return "enhanced";
+      if (/Google/i.test(name))             return "google";
+      return "standard";
+    }
+
+    function voiceCategoryLabel(cat) {
+      switch (cat) {
+        case "natural":  return "Natural ⭐⭐⭐";
+        case "premium":  return "Premium ⭐⭐";
+        case "enhanced": return "Enhanced ⭐⭐";
+        case "google":   return "Google ⭐⭐";
+        default:         return "Standard ⭐";
+      }
+    }
+
+    function renderVoicePanel() {
+      if (!window.TTS || !TTS.isSupported()) {
+        voiceBadge.textContent = "Non supportato";
+        voiceBadge.className = "badge warn";
+        voiceSelect.innerHTML = '<option>Web Speech API non disponibile</option>';
+        voiceSelect.disabled = true;
+        voiceTestBtn.disabled = true;
+        voiceResetBtn.disabled = true;
+        voiceHint.innerHTML = "Il browser non supporta la sintesi vocale.";
+        return;
+      }
+
+      const lang = currentLang();
+      const voices = TTS.getVoices(lang);
+      const selected = TTS.getSelectedVoice(lang);
+
+      // Badge riepilogo
+      if (!TTS.isReady()) {
+        voiceBadge.textContent = "Caricamento voci…";
+        voiceBadge.className = "badge";
+      } else if (!voices.length) {
+        voiceBadge.textContent = `Nessuna voce per ${lang}`;
+        voiceBadge.className = "badge warn";
+      } else if (selected) {
+        const cat = voiceCategory(selected.name);
+        voiceBadge.textContent = `${selected.name} · ${lang}`;
+        voiceBadge.className = "badge " + (cat === "standard" ? "warn" : "good");
+      } else {
+        voiceBadge.textContent = `${voices.length} voci disponibili`;
+        voiceBadge.className = "badge";
+      }
+
+      // Select
+      voiceSelect.innerHTML = "";
+
+      if (!voices.length) {
+        voiceSelect.innerHTML = `<option>Nessuna voce ${lang}</option>`;
+        voiceSelect.disabled = true;
+        voiceTestBtn.disabled = true;
+        voiceResetBtn.disabled = true;
+        return;
+      }
+
+      // Ordina: per categoria (natural → premium → enhanced → google → standard) poi per nome
+      const order = { natural: 0, premium: 1, enhanced: 2, google: 3, standard: 4 };
+      voices.sort((a, b) => {
+        const ca = order[voiceCategory(a.name)] ?? 9;
+        const cb = order[voiceCategory(b.name)] ?? 9;
+        if (ca !== cb) return ca - cb;
+        return a.name.localeCompare(b.name);
+      });
+
+      // Opzione "Auto" (usa il pickBestVoice)
+      const autoOpt = document.createElement("option");
+      autoOpt.value = "";
+      autoOpt.textContent = "🎯 Automatica (migliore disponibile)";
+      voiceSelect.appendChild(autoOpt);
+
+      for (const v of voices) {
+        const opt = document.createElement("option");
+        const cat = voiceCategory(v.name);
+        opt.value = v.name;
+        opt.textContent = `${v.name} — ${voiceCategoryLabel(cat)}${v.localService ? "" : " ☁️"}`;
+        voiceSelect.appendChild(opt);
+      }
+
+      // Pre-selezione
+      const userChoice = TTS._state?.selectedByLang?.[lang] || "";
+      voiceSelect.value = userChoice;
+      voiceSelect.disabled = false;
+      voiceTestBtn.disabled = false;
+      voiceResetBtn.disabled = !userChoice;
+
+      // Info aggiuntive
+      const naturalCount = voices.filter(v => voiceCategory(v.name) === "natural").length;
+      if (naturalCount > 0) {
+        voiceHint.innerHTML =
+          `Ci sono <strong>${naturalCount}</strong> voci naturali per <strong>${lang}</strong>. ` +
+          `Consigliate per la massima qualità.`;
+      } else {
+        voiceHint.innerHTML =
+          `Nessuna voce naturale per <strong>${lang}</strong>. ` +
+          `Apri l'app in <strong>Microsoft Edge</strong> per le voci ` +
+          `<strong>Online (Natural)</strong>, oppure scarica le voci ` +
+          `<strong>Enhanced/Premium</strong> dalle impostazioni di sistema.`;
+      }
+    }
+
+    function onVoiceSelectChange() {
+      const lang = currentLang();
+      const voiceName = voiceSelect.value;
+      if (voiceName) {
+        TTS.setVoice(lang, voiceName);
+      } else {
+        TTS.clearVoiceSelection(lang);
+      }
+      voiceResetBtn.disabled = !voiceName;
+      renderVoicePanel();
+      // Anteprima automatica
+      speakCurrent();
+    }
+
+    function onVoiceTest() {
+      const card = state.cards[state.index];
+      const text = card?.back || "Hello, this is a test.";
+      TTS.speak(text, currentLang());
+    }
+
+    function onVoiceReset() {
+      TTS.clearVoiceSelection(currentLang());
+      renderVoicePanel();
+      showToast("Voce automatica ripristinata", "success");
+    }
+
+    // Toggle pannello
+    voiceHeader.addEventListener("click", () => {
+      voicePanel.classList.toggle("open");
+    });
+    voiceSelect.addEventListener("change", onVoiceSelectChange);
+    voiceTestBtn.addEventListener("click", onVoiceTest);
+    voiceResetBtn.addEventListener("click", onVoiceReset);
+
+    // ================================================================
     // FILTRI
     // ================================================================
     function applyFilters(cards) {
@@ -482,7 +736,7 @@
     }
 
     // ================================================================
-    // RENDER
+    // RENDER CARD
     // ================================================================
     function render() {
       const total = state.cards.length;
@@ -516,7 +770,7 @@
 
       cardWrap.innerHTML = `
         <div class="card ${state.flipped ? "flipped" : ""}" id="cardEl">
-          <button class="card-audio" id="audioBtn" title="Ascolta (TTS)" aria-label="Ascolta">🔊</button>
+          <button class="card-audio" id="audioBtn" title="Ascolta (TTS) — tasto S" aria-label="Ascolta">🔊</button>
           <div class="card-face card-front">
             <span class="card-badge">${card.level || ""}</span>
             <span class="card-badge theme">${themeLabel}</span>
@@ -537,7 +791,6 @@
         </div>`;
 
       document.getElementById("cardEl").addEventListener("click", (e) => {
-        // Il click sul bottone audio non deve girare la card
         if (e.target.closest("#audioBtn")) return;
         flip();
       });
@@ -644,8 +897,7 @@
     function speakCurrent() {
       const card = state.cards[state.index];
       if (!card || !window.TTS) return;
-      const deck = DECKS.find((d) => d.id === state.deckId);
-      const lang = deck?.lang || "en-US";
+      const lang = currentLang();
       const btn = document.getElementById("audioBtn");
       if (btn) btn.classList.add("speaking");
 
@@ -692,7 +944,6 @@
         try {
           const data = JSON.parse(reader.result);
 
-          // Accetta più formati: {progress:{srs}}, {srs}, oppure {key: {...}}
           let incoming;
           if (data.progress?.srs) incoming = data.progress.srs;
           else if (data.srs) incoming = data.srs;
@@ -765,6 +1016,9 @@
       dueChk.checked = false;
       populateFilters();
       rebuildCards();
+      renderVoicePanel();
+      // Precarica la nuova lingua
+      if (window.TTS) TTS.preload([currentLang()]).catch(() => {});
     });
 
     themeSel.addEventListener("change", () => {
@@ -817,13 +1071,11 @@
     populateFilters();
     rebuildCards();
 
-    // Se le voci TTS non sono ancora caricate, avvisa quando lo sono
+    // Pannello voce: render iniziale + refresh quando le voci sono pronte
+    renderVoicePanel();
     if (window.TTS) {
       TTS.onVoicesReady(() => {
-        const voice = TTS.pickBestVoice(
-          DECKS.find((d) => d.id === state.deckId)?.lang || "en-US"
-        );
-        if (voice) console.log("[tts] Voce selezionata:", voice.name, voice.lang);
+        renderVoicePanel();
       });
     }
   })();
