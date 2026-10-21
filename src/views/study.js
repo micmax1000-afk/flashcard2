@@ -3,6 +3,18 @@ import { el } from "../ui/dom.js";
 import { createCard } from "../ui/components/card.js";
 import { toast } from "../ui/toast.js";
 
+/** Mappa id mazzo → codice lingua BCP-47 per il retro della carta. */
+function guessBackLang(deckId) {
+  if (!deckId) return "en-US";
+  const id = String(deckId).toLowerCase();
+  if (id === "en" || id.startsWith("en-")) return "en-US";
+  if (id === "es" || id.startsWith("es-")) return "es-ES";
+  if (id === "fr" || id.startsWith("fr-")) return "fr-FR";
+  if (id === "de" || id.startsWith("de-")) return "de-DE";
+  if (id === "it" || id.startsWith("it-")) return "it-IT";
+  return "en-US";
+}
+
 export async function mount(outlet, { path } = {}) {
   const cardSlot = outlet.querySelector("#study-card");
   const progressEl = outlet.querySelector("#study-progress");
@@ -49,10 +61,15 @@ export async function mount(outlet, { path } = {}) {
       return;
     }
 
+    const card = queue.all[index];
+    // Fronte sempre italiano; retro = lingua del mazzo (da id: en, es, fr, de, …)
+    const backLang = guessBackLang(card.deckId);
     currentCtrl = createCard({
-      card: queue.all[index],
+      card,
       onAnswer: handleAnswer,
       onExit: handleExit,
+      frontLang: "it-IT",
+      backLang,
     });
     cardSlot.appendChild(currentCtrl.node);
     progressEl.value = index;

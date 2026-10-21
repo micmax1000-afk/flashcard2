@@ -1,52 +1,87 @@
 import { el } from "../dom.js";
 import { RATING } from "../../srs/scheduler.js";
 
-export function createCard({ card, onAnswer, onExit, showBack = false }) {
+/**
+ * @param {object} opts
+ * @param {object} opts.card
+ * @param {(rating: number) => void} opts.onAnswer
+ * @param {() => void} [opts.onExit]
+ * @param {boolean} [opts.showBack]
+ * @param {string} [opts.frontLang]  lingua del fronte (default it-IT)
+ * @param {string} [opts.backLang]   lingua del retro (default en-US)
+ */
+export function createCard({
+  card,
+  onAnswer,
+  onExit,
+  showBack = false,
+  frontLang = "it-IT",
+  backLang = "en-US",
+}) {
   let revealed = showBack;
 
-  // Funzione per l'audio (Text-to-Speech)
-  const speak = (text, lang = "en-US") => {
+  /** Usa il modulo TTS se presente, altrimenti fallback a speechSynthesis. */
+  function speak(text, lang) {
+    if (!text) return;
+    if (window.TTS && typeof window.TTS.speak === "function") {
+      window.TTS.speak(text, lang || "en-US").catch((err) => {
+        console.warn("[card] TTS.speak error:", err);
+      });
+      return;
+    }
     if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+      try {
+        window.speechSynthesis.cancel();
+      } catch (_) { /* ignore */ }
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang;
-      u.rate = 0.9;
+      u.lang = lang || "en-US";
+      u.rate = 0.95;
       window.speechSynthesis.speak(u);
     }
-  };
+  }
 
-  // Pulsante audio
-  const audioBtn = (text, lang) => el("button", {
-    type: "button",
-    class: "btn-icon",
-    style: "margin-top: 0.5rem; font-size: 1.5rem;",
-    "aria-label": "Ascolta pronuncia",
-    onClick: (e) => {
-      e.stopPropagation(); // Evita che cliccando l'audio si giri la carta
-      speak(text, lang);
-    }
-  }, "🔊");
+  const audioBtn = (text, lang) =>
+    el(
+      "button",
+      {
+        type: "button",
+        class: "btn-icon",
+        style: "margin-top: 0.5rem; font-size: 1.5rem;",
+        "aria-label": "Ascolta pronuncia",
+        onClick: (e) => {
+          e.stopPropagation();
+          speak(text, lang);
+        },
+      },
+      "🔊",
+    );
 
-  // NOTA: Cambia "it-IT" e "en-US" se il fronte/retro della tua lingua è diverso
-  const frontEl = el("div", { class: "flashcard__face flashcard__face--front" },
+  const frontEl = el(
+    "div",
+    { class: "flashcard__face flashcard__face--front" },
     el("span", { class: "flashcard__lang", text: "Fronte" }),
     el("p", { class: "flashcard__text", text: card.front }),
-    audioBtn(card.front, "it-IT") 
+    audioBtn(card.front, frontLang),
   );
 
-  const backEl = el("div", { class: "flashcard__face flashcard__face--back" },
+  const backEl = el(
+    "div",
+    { class: "flashcard__face flashcard__face--back" },
     el("span", { class: "flashcard__lang", text: "Retro" }),
     el("p", { class: "flashcard__text", text: card.back }),
-    audioBtn(card.back, "en-US")
+    audioBtn(card.back, backLang),
   );
 
   const inner = el("div", { class: "flashcard__inner" }, frontEl, backEl);
 
-  const revealBtn = el("button", {
+  const revealBtn = el(
+    "button",
+    {
       type: "button",
       class: "btn btn-primary flashcard__reveal",
       onClick: reveal,
-    }, "Mostra risposta"
+    },
+    "Mostra risposta",
   );
 
   const ratings = el(
@@ -61,19 +96,23 @@ export function createCard({ card, onAnswer, onExit, showBack = false }) {
   const root = el(
     "div",
     { class: "flashcard", "aria-label": "Flashcard" },
-    el("div", {
-      class: "flashcard__scene",
-      onClick: () => (!revealed ? reveal() : null),
-      role: "button",
-      tabindex: "0",
-      "aria-label": revealed ? "Carta girata" : "Carta coperta, premi invio per girare",
-      onKeydown: (e) => {
-        if ((e.key === "Enter" || e.key === " ") && !revealed) {
-          e.preventDefault();
-          reveal();
-        }
+    el(
+      "div",
+      {
+        class: "flashcard__scene",
+        onClick: () => (!revealed ? reveal() : null),
+        role: "button",
+        tabindex: "0",
+        "aria-label": revealed ? "Carta girata" : "Carta coperta, premi invio per girare",
+        onKeydown: (e) => {
+          if ((e.key === "Enter" || e.key === " ") && !revealed) {
+            e.preventDefault();
+            reveal();
+          }
+        },
       },
-    }, inner),
+      inner,
+    ),
     el("div", { class: "flashcard__actions" }, revealBtn, ratings),
   );
 
@@ -124,6 +163,9 @@ export function createCard({ card, onAnswer, onExit, showBack = false }) {
     reveal,
     destroy() {
       document.removeEventListener("keydown", onKey);
+      if (window.TTS && typeof window.TTS.stop === "function") {
+        window.TTS.stop();
+      }
     },
   };
 }
