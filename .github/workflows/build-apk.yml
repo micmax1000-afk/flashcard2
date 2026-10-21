@@ -12,12 +12,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22'        # ← Capacitor 8 richiede Node 22+
 
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'        # ← Capacitor 8 richiede Java 21
 
       - name: Install dependencies
         run: npm install
