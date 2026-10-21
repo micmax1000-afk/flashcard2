@@ -1,1 +1,250 @@
-<PLACEHOLDER_TOO_LARGE>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcard – Impara le lingue</title>
+
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --accent: #4f46e5;
+      --accent-light: #eef2ff;
+      --success: #10b981;
+      --danger: #ef4444;
+      --border: #e5e7eb;
+      --radius: 16px;
+      --shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding: 12px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+    .app { max-width: 480px; margin: 0 auto; }
+    header { text-align: center; padding: 16px 0 8px; }
+    header h1 { font-size: 1.5rem; font-weight: 700; }
+    header p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+    .panel {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .panel label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    select, .btn {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      font-size: 0.95rem;
+      color: var(--text);
+      min-height: 44px;
+    }
+    .btn {
+      cursor: pointer;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .row > * { flex: 1; min-width: 100px; }
+    .checks { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+    .checks label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+      margin: 0;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--border);
+      color: var(--muted);
+    }
+    .badge.warn { background: #fef3c7; color: #b45309; }
+    .badge.good { background: #d1fae5; color: #047857; }
+    .voice-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+    .progress-wrap { margin: 8px 0 12px; }
+    .progress-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .progress-bar > div {
+      height: 100%;
+      background: var(--accent);
+      width: 0;
+      transition: width .25s;
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px 16px 24px;
+      text-align: center;
+      min-height: 220px;
+      position: relative;
+    }
+    .card-emoji { font-size: 3rem; line-height: 1; margin: 8px 0; }
+    .card-text { font-size: 1.6rem; font-weight: 700; margin: 8px 0; word-break: break-word; }
+    .card-phon { color: var(--muted); font-style: italic; font-size: 0.95rem; }
+    .card-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #1f2937;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .speak-btn {
+      position: absolute;
+      top: 12px; left: 12px;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--card);
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+    .speak-btn.speaking { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .actions .btn { min-height: 48px; }
+    .nav { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px; margin-top: 8px; }
+    details.voice-panel > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    details.voice-panel > summary::-webkit-details-marker { display: none; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>🃏 Flashcard</h1>
+      <p>Impara le lingue — tema, difficoltà, ripetizione spaziata</p>
+    </header>
+
+    <div class="panel">
+      <label>Mazzo</label>
+      <select id="deckSelect"></select>
+
+      <label style="margin-top:12px">Tema</label>
+      <select id="themeSelect"><option value="">Tutti i temi</option></select>
+
+      <label style="margin-top:12px">Difficoltà</label>
+      <select id="levelSelect"><option value="">Tutti i livelli</option></select>
+
+      <div class="checks">
+        <label><input type="checkbox" id="reviewOnly" /> 🔴 Solo da rivedere</label>
+        <label><input type="checkbox" id="dueOnly" /> ⏰ Solo in scadenza</label>
+        <label><input type="checkbox" id="autoSpeak" checked /> 🔊 Auto-pronuncia</label>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button type="button" class="btn" id="exportBtn">📤 Esporta</button>
+        <button type="button" class="btn" id="importBtn">📥 Importa</button>
+        <button type="button" class="btn" id="resetBtn">↺ Reset</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json,.json" hidden />
+    </div>
+
+    <details class="panel voice-panel" id="voicePanel">
+      <summary>
+        <span class="voice-head" style="width:100%">
+          <span>🎙️ Voce TTS</span>
+          <span class="badge" id="voiceBadge">—</span>
+        </span>
+      </summary>
+      <div style="margin-top:10px">
+        <div class="row">
+          <select id="voiceSelect"></select>
+          <button type="button" class="btn" id="voiceTestBtn" style="flex:0 0 auto;width:auto;padding:10px 16px">▶ Prova</button>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" id="voiceResetBtn">Auto</button>
+        </div>
+        <p class="hint" id="voiceHint">—</p>
+      </div>
+    </details>
+
+    <div class="progress-wrap">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--muted)">
+        <span id="counter">0 / 0</span>
+        <span id="pct">0%</span>
+      </div>
+      <div class="progress-bar"><div id="progressFill"></div></div>
+    </div>
+
+    <div class="card" id="cardEl">
+      <button type="button" class="speak-btn" id="speakBtn" aria-label="Ascolta">🔊</button>
+      <div id="cardBody">Caricamento…</div>
+    </div>
+
+    <div class="nav">
+      <button type="button" class="btn" id="prevBtn">←</button>
+      <button type="button" class="btn primary" id="flipBtn">Gira</button>
+      <button type="button" class="btn" id="nextBtn">→</button>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" id="knowBtn" style="background:var(--success);color:#fff;border-color:var(--success)">✓ Lo sapevo</button>
+      <button type="button" class="btn" id="reviewBtn" style="background:var(--danger);color:#fff;border-color:var(--danger)">✗ Da rivedere</button>
+    </div>
+  </div>
+
+  <!--
+    Ordine script:
+    1) data.js  → DECKS
+    2) meta.js  → temi/livelli
+    3) tts.js   → sintesi vocale
+    4) app.js   → logica UI
+  -->
+  <script src="data.js"></script>
+  <script src="meta.js"></script>
+  <script src="tts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
