@@ -17,7 +17,6 @@
       --accent-dark: #2563eb;
       --success: #10b981;
       --danger: #ef4444;
-      --warn: #f59e0b;
       --border: #e5e7eb;
       --shadow: 0 4px 16px rgba(0,0,0,.08);
       --radius: 16px;
@@ -38,7 +37,6 @@
     header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
     header p  { font-size: 0.85rem; color: var(--muted); }
 
-    /* ---------- CONTROLLI ---------- */
     .controls {
       width: 100%; max-width: 720px;
       display: grid; grid-template-columns: 1fr 1fr 1fr;
@@ -56,10 +54,9 @@
     }
     .controls select:focus { outline: 2px solid var(--accent); }
 
-    /* ---------- FILTRI EXTRA ---------- */
     .extras {
       width: 100%; max-width: 720px;
-      display: flex; flex-wrap: wrap; gap: 12px;
+      display: flex; flex-wrap: wrap; gap: 10px;
       align-items: center; margin-bottom: 12px;
       padding: 10px 12px; background: var(--card-bg);
       border: 1px solid var(--border); border-radius: 12px;
@@ -67,14 +64,16 @@
     }
     .extras label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
     .extras input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
-    .extras .reset-btn {
-      margin-left: auto; padding: 6px 12px; border-radius: 8px;
+    .extras .tool-btn {
+      padding: 6px 12px; border-radius: 8px;
       border: 1px solid var(--border); background: transparent;
-      font-size: 0.8rem; color: var(--muted); cursor: pointer;
+      font-size: 0.8rem; color: var(--text); cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px;
     }
-    .extras .reset-btn:hover { color: var(--danger); border-color: var(--danger); }
+    .extras .tool-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .extras .tool-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+    .extras .spacer { margin-left: auto; }
 
-    /* ---------- PROGRESSO ---------- */
     .progress {
       width: 100%; max-width: 720px;
       display: flex; align-items: center; gap: 12px;
@@ -90,7 +89,6 @@
       width: 0%; transition: width .3s ease;
     }
 
-    /* ---------- CARD ---------- */
     .card-wrap {
       width: 100%; max-width: 720px;
       perspective: 1200px; margin-bottom: 16px;
@@ -122,7 +120,7 @@
       letter-spacing: .05em; padding: 4px 10px; border-radius: 999px;
       background: var(--accent); color: #fff;
     }
-    .card-badge.theme { left: auto; right: 12px; background: var(--muted); }
+    .card-badge.theme { left: auto; right: 56px; background: var(--muted); }
     .card-badge.box {
       top: auto; bottom: 12px; left: 12px;
       background: var(--border); color: var(--muted);
@@ -135,7 +133,24 @@
       font-size: 0.75rem; color: var(--muted);
     }
 
-    /* ---------- AZIONI ---------- */
+    /* Pulsante audio in alto a destra */
+    .card-audio {
+      position: absolute;
+      top: 10px; right: 10px;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      transition: background .2s ease, transform .1s ease;
+      z-index: 2;
+    }
+    .card-audio:hover { background: var(--bg); transform: scale(1.05); }
+    .card-audio:active { transform: scale(.95); }
+    .card-audio.speaking { background: var(--accent); color: #fff; border-color: var(--accent); }
+
     .actions {
       width: 100%; max-width: 720px;
       display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
@@ -156,7 +171,6 @@
     .btn.danger  { background: var(--danger);  color: #fff; border-color: var(--danger); }
     .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 
-    /* ---------- EMPTY STATE ---------- */
     .empty {
       width: 100%; max-width: 720px; padding: 40px 20px;
       text-align: center; color: var(--muted);
@@ -169,13 +183,29 @@
       margin-top: 24px; font-size: 0.75rem; color: var(--muted);
       text-align: center; line-height: 1.6;
     }
+
+    /* Toast per feedback (import/export) */
+    .toast {
+      position: fixed;
+      bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #1f2937; color: #fff;
+      padding: 12px 20px; border-radius: 10px;
+      font-size: 0.85rem; font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0,0,0,.2);
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s ease, transform .25s ease;
+      z-index: 1000;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { background: var(--success); }
+    .toast.error   { background: var(--danger); }
   </style>
 </head>
 <body>
 
   <header>
     <h1>🃏 Flashcard</h1>
-    <p>Impara le lingue — tema, difficoltà e ripetizione spaziata</p>
+    <p>Impara le lingue — tema, difficoltà, ripetizione spaziata</p>
   </header>
 
   <!-- Selettori -->
@@ -194,7 +224,7 @@
     </div>
   </div>
 
-  <!-- Filtri extra + reset -->
+  <!-- Filtri extra + strumenti -->
   <div class="extras">
     <label>
       <input type="checkbox" id="reviewOnly" />
@@ -202,11 +232,17 @@
     </label>
     <label>
       <input type="checkbox" id="dueOnly" />
-      ⏰ Solo in scadenza (SRS)
+      ⏰ Solo in scadenza
     </label>
-    <button class="reset-btn" id="resetBtn" title="Azzera progressi del mazzo corrente">
-      ↺ Reset mazzo
-    </button>
+    <label>
+      <input type="checkbox" id="autoSpeak" checked />
+      🔊 Auto-pronuncia
+    </label>
+    <span class="spacer"></span>
+    <button class="tool-btn" id="exportBtn" title="Esporta progressi come JSON">📤 Esporta</button>
+    <button class="tool-btn" id="importBtn" title="Importa progressi da JSON">📥 Importa</button>
+    <button class="tool-btn danger" id="resetBtn" title="Azzera progressi del mazzo corrente">↺ Reset</button>
+    <input type="file" id="importFile" accept="application/json,.json" hidden />
   </div>
 
   <!-- Progresso -->
@@ -232,14 +268,19 @@
 
   <footer><span id="stats">—</span></footer>
 
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
   <!-- ============================================================
-       ORDINE DI CARICAMENTO OBBLIGATORIO:
+       ORDINE OBBLIGATORIO:
        1) data.js  → DECKS
-       2) meta.js  → arricchisce con theme/level + carte EN
-       3) app qui sotto → usa filterCards, THEMES, LEVELS
+       2) meta.js  → temi + livelli + nuove carte
+       3) tts.js   → sintesi vocale
+       4) script app
        ============================================================ -->
   <script src="data.js"></script>
   <script src="meta.js"></script>
+  <script src="tts.js"></script>
 
   <script>
   (function () {
@@ -250,7 +291,6 @@
     // ================================================================
     const STORAGE_KEY = "flashcard-progress-v2";
     const DAY_MS = 24 * 60 * 60 * 1000;
-    // Intervalli SRS (in giorni) per box 1..5
     const SRS_DAYS = [null, 1, 3, 7, 14, 30];
 
     // ================================================================
@@ -262,10 +302,10 @@
       level: "",
       reviewOnly: false,
       dueOnly: false,
-      cards: [],        // carte filtrate correnti
+      autoSpeak: true,
+      cards: [],
       index: 0,
       flipped: false,
-      // SRS: chiave "deckId|front" → { box, due }
       srs: {},
     };
 
@@ -293,28 +333,13 @@
     }
 
     // ================================================================
-    // SRS — helpers
+    // SRS
     // ================================================================
     function srsKey(deckId, front) { return `${deckId}|${front}`; }
-
-    function getSrs(front) {
-      return state.srs[srsKey(state.deckId, front)] || null;
-    }
-
-    function isKnown(front) {
-      const s = getSrs(front);
-      return !!s && s.box >= 2;
-    }
-
-    function isReview(front) {
-      const s = getSrs(front);
-      return !!s && s.box === 1;
-    }
-
-    function isDue(front) {
-      const s = getSrs(front);
-      return !s || s.due <= Date.now();
-    }
+    function getSrs(front) { return state.srs[srsKey(state.deckId, front)] || null; }
+    function isKnown(front) { const s = getSrs(front); return !!s && s.box >= 2; }
+    function isReview(front) { const s = getSrs(front); return !!s && s.box === 1; }
+    function isDue(front) { const s = getSrs(front); return !s || s.due <= Date.now(); }
 
     function markKnown(front) {
       const k = srsKey(state.deckId, front);
@@ -337,13 +362,31 @@
     }
 
     // ================================================================
-    // RIFERIMENTI DOM
+    // MERGE (usato da import)
+    // ================================================================
+    function mergeSrs(local, incoming) {
+      const out = { ...local };
+      for (const [key, c] of Object.entries(incoming || {})) {
+        const l = out[key];
+        if (!l) { out[key] = c; continue; }
+        if ((c.box || 0) > (l.box || 0)) out[key] = c;
+        else if ((c.box || 0) === (l.box || 0) && (c.due || 0) > (l.due || 0)) out[key] = c;
+      }
+      return out;
+    }
+
+    // ================================================================
+    // DOM
     // ================================================================
     const deckSel    = document.getElementById("deckSelect");
     const themeSel   = document.getElementById("themeSelect");
     const levelSel   = document.getElementById("levelSelect");
     const reviewChk  = document.getElementById("reviewOnly");
     const dueChk     = document.getElementById("dueOnly");
+    const autoSpeakChk = document.getElementById("autoSpeak");
+    const exportBtn  = document.getElementById("exportBtn");
+    const importBtn  = document.getElementById("importBtn");
+    const importFile = document.getElementById("importFile");
     const resetBtn   = document.getElementById("resetBtn");
     const cardWrap   = document.getElementById("cardWrap");
     const prevBtn    = document.getElementById("prevBtn");
@@ -355,6 +398,20 @@
     const pctEl      = document.getElementById("pct");
     const fillEl     = document.getElementById("progressFill");
     const statsEl    = document.getElementById("stats");
+    const toastEl    = document.getElementById("toast");
+
+    // ================================================================
+    // TOAST
+    // ================================================================
+    let toastTimer = null;
+    function showToast(msg, type = "") {
+      toastEl.textContent = msg;
+      toastEl.className = "toast show " + type;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toastEl.classList.remove("show");
+      }, 2600);
+    }
 
     // ================================================================
     // POPOLAMENTO UI
@@ -434,7 +491,7 @@
         cardWrap.innerHTML = `
           <div class="empty">
             <h2>Nessuna carta trovata</h2>
-            <p>Prova a cambiare tema, difficoltà o a togliere i filtri "da rivedere"/"in scadenza".</p>
+            <p>Prova a cambiare tema, difficoltà o a togliere i filtri.</p>
           </div>`;
         counter.textContent = "0 / 0";
         pctEl.textContent = "0%";
@@ -459,6 +516,7 @@
 
       cardWrap.innerHTML = `
         <div class="card ${state.flipped ? "flipped" : ""}" id="cardEl">
+          <button class="card-audio" id="audioBtn" title="Ascolta (TTS)" aria-label="Ascolta">🔊</button>
           <div class="card-face card-front">
             <span class="card-badge">${card.level || ""}</span>
             <span class="card-badge theme">${themeLabel}</span>
@@ -478,7 +536,15 @@
           </div>
         </div>`;
 
-      document.getElementById("cardEl").addEventListener("click", flip);
+      document.getElementById("cardEl").addEventListener("click", (e) => {
+        // Il click sul bottone audio non deve girare la card
+        if (e.target.closest("#audioBtn")) return;
+        flip();
+      });
+      document.getElementById("audioBtn").addEventListener("click", (e) => {
+        e.stopPropagation();
+        speakCurrent();
+      });
 
       counter.textContent = `${state.index + 1} / ${total}`;
       const pct = Math.round(((state.index + 1) / total) * 100);
@@ -496,10 +562,10 @@
       const total = state.cards.length;
       if (!total) { statsEl.textContent = "—"; return; }
 
-      const known   = state.cards.filter((c) => isKnown(c.front)).length;
-      const review  = state.cards.filter((c) => isReview(c.front)).length;
-      const due     = state.cards.filter((c) => isDue(c.front)).length;
-      const newCnt  = state.cards.filter((c) => !getSrs(c.front)).length;
+      const known  = state.cards.filter((c) => isKnown(c.front)).length;
+      const review = state.cards.filter((c) => isReview(c.front)).length;
+      const due    = state.cards.filter((c) => isDue(c.front)).length;
+      const newCnt = state.cards.filter((c) => !getSrs(c.front)).length;
 
       statsEl.innerHTML =
         `📚 Filtrate: <strong>${total}</strong> · ` +
@@ -523,7 +589,7 @@
     function flip() {
       state.flipped = !state.flipped;
       render();
-      if (state.flipped) speakCurrent();
+      if (state.flipped && state.autoSpeak) speakCurrent();
     }
 
     function next() {
@@ -550,12 +616,8 @@
       if (result === "review") markReview(card.front);
       saveProgress();
 
-      // Ricostruisci la lista: se il filtro corrente rimuove questa carta, resta
-      // sullo stesso indice (scivola la prossima). Altrimenti avanza.
-      const before = state.cards.length;
       const newCards = applyFilters(DECKS.find((d) => d.id === state.deckId).cards);
       const stillPresent = newCards.some((c) => c.front === card.front);
-
       state.cards = newCards;
 
       if (!stillPresent) {
@@ -573,22 +635,106 @@
       if (!confirm(`Azzerare tutti i progressi del mazzo "${state.deckId}"?`)) return;
       resetDeck();
       rebuildCards();
+      showToast("Progressi azzerati", "success");
     }
 
     // ================================================================
-    // SPEECH
+    // TTS
     // ================================================================
     function speakCurrent() {
       const card = state.cards[state.index];
-      if (!card || !window.speechSynthesis) return;
+      if (!card || !window.TTS) return;
       const deck = DECKS.find((d) => d.id === state.deckId);
       const lang = deck?.lang || "en-US";
-      const utter = new SpeechSynthesisUtterance(card.back);
-      utter.lang = lang;
-      utter.rate = 0.9;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utter);
+      const btn = document.getElementById("audioBtn");
+      if (btn) btn.classList.add("speaking");
+
+      TTS.speak(card.back, lang).finally(() => {
+        const b = document.getElementById("audioBtn");
+        if (b) b.classList.remove("speaking");
+      });
     }
+
+    // ================================================================
+    // EXPORT / IMPORT
+    // ================================================================
+    exportBtn.addEventListener("click", () => {
+      const payload = {
+        version: 2,
+        app: "flashcard-it",
+        exportedAt: new Date().toISOString(),
+        progress: JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"),
+      };
+      const blob = new Blob(
+        [JSON.stringify(payload, null, 2)],
+        { type: "application/json" }
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `flashcard-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      const count = Object.keys(payload.progress.srs || {}).length;
+      showToast(`Esportate ${count} voci`, "success");
+    });
+
+    importBtn.addEventListener("click", () => importFile.click());
+
+    importFile.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+
+          // Accetta più formati: {progress:{srs}}, {srs}, oppure {key: {...}}
+          let incoming;
+          if (data.progress?.srs) incoming = data.progress.srs;
+          else if (data.srs) incoming = data.srs;
+          else if (data && typeof data === "object" && !Array.isArray(data)) incoming = data;
+          else throw new Error("Formato JSON non riconosciuto");
+
+          if (typeof incoming !== "object" || Array.isArray(incoming)) {
+            throw new Error("Struttura non valida");
+          }
+
+          const count = Object.keys(incoming).length;
+          if (count === 0) {
+            showToast("File vuoto o senza progressi", "error");
+            return;
+          }
+
+          const merge = confirm(
+            `Trovate ${count} voci.\n\n` +
+            `OK  = FONDI con i progressi attuali (consigliato)\n` +
+            `Annulla = SOSTITUISCI completamente`
+          );
+
+          const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+          const next = merge
+            ? { ...current, srs: mergeSrs(current.srs || {}, incoming) }
+            : { srs: incoming };
+
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+          state.srs = next.srs || {};
+          rebuildCards({ resetIndex: false });
+          showToast(
+            `Importate ${count} voci (${merge ? "merge" : "sostituzione"})`,
+            "success"
+          );
+        } catch (err) {
+          console.error(err);
+          showToast("File JSON non valido: " + err.message, "error");
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    });
 
     // ================================================================
     // UTILITY
@@ -641,8 +787,11 @@
       rebuildCards();
     });
 
-    resetBtn.addEventListener("click", doReset);
+    autoSpeakChk.addEventListener("change", () => {
+      state.autoSpeak = autoSpeakChk.checked;
+    });
 
+    resetBtn.addEventListener("click", doReset);
     nextBtn.addEventListener("click", next);
     prevBtn.addEventListener("click", prev);
     flipBtn.addEventListener("click", flip);
@@ -650,19 +799,33 @@
     reviewBtn.addEventListener("click", () => markAndAdvance("review"));
 
     document.addEventListener("keydown", (e) => {
-      if (e.target.tagName === "SELECT" || e.target.tagName === "INPUT") return;
+      const tag = e.target.tagName;
+      if (tag === "SELECT" || tag === "INPUT" || tag === "TEXTAREA") return;
+
       if (e.key === "ArrowRight") next();
       else if (e.key === "ArrowLeft") prev();
       else if (e.key === " ") { e.preventDefault(); flip(); }
+      else if (e.key.toLowerCase() === "s") speakCurrent();
     });
 
     // ================================================================
     // BOOT
     // ================================================================
     state.srs = loadProgress();
+    state.autoSpeak = autoSpeakChk.checked;
     populateDecks();
     populateFilters();
     rebuildCards();
+
+    // Se le voci TTS non sono ancora caricate, avvisa quando lo sono
+    if (window.TTS) {
+      TTS.onVoicesReady(() => {
+        const voice = TTS.pickBestVoice(
+          DECKS.find((d) => d.id === state.deckId)?.lang || "en-US"
+        );
+        if (voice) console.log("[tts] Voce selezionata:", voice.name, voice.lang);
+      });
+    }
   })();
   </script>
 </body>
