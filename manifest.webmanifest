@@ -1,0 +1,20 @@
+{
+  "name": "Flashcards — Ripetizione dilazionata",
+  "short_name": "Flashcards",
+  "description": "Impara vocabolario con flashcard e ripetizione dilazionata.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "./public/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

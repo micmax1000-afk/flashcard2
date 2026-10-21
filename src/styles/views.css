@@ -1,0 +1,89 @@
+/* Home */
+.view--home h2 { margin: 0; }
+.home-summary { display: flex; flex-direction: column; gap: var(--sp-4); }
+.home-actions { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+.streak-inline { color: var(--text-muted); font-size: var(--fs-sm); }
+.empty-note { font-size: var(--fs-sm); }
+
+/* Study */
+.study-header { display: flex; align-items: center; gap: var(--sp-3); }
+
+#study-progress {
+  flex: 1;
+  height: 8px;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  appearance: none;
+  background: var(--surface-2);
+}
+#study-progress::-webkit-progress-bar {
+  background: var(--surface-2);
+  border-radius: 999px;
+}
+#study-progress::-webkit-progress-value {
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width var(--dur);
+}
+#study-progress::-moz-progress-bar {
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.card-slot { min-height: 240px; }
+
+/* Quiz */
+.quiz { display: flex; flex-direction: column; gap: var(--sp-4); }
+.quiz__header {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-sm);
+}
+.quiz__prompt {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-6);
+  text-align: center;
+  box-shadow: var(--shadow-1);
+}
+.quiz__options { display: flex; flex-direction: column; gap: var(--sp-2); }
+.quiz__option {
+  justify-content: flex-start;
+  text-align: left;
+  min-height: 48px;
+  font-size: var(--fs-md);
+}
+.quiz__option.is-correct {
+  background: color-mix(in srgb, var(--success) 20%, var(--surface));
+  border-color: var(--success);
+}
+.quiz__option.is-wrong {
+  background: color-mix(in srgb, var(--danger) 20%, var(--surface));
+  border-color: var(--danger);
+}
+
+/* Stats */
+.stats-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+.stats-section h3 { margin: 0; }
+.stats-streak { display: flex; align-items: baseline; gap: var(--sp-2); }
+.stats-streak strong { font-size: var(--fs-3xl); line-height: 1; }
+
+/* Settings */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.settings-section h3 { margin: 0; }
+.settings-section--danger { border-color: var(--danger); }
