@@ -15,6 +15,35 @@
     flipped: false,
   };
 
+  /* —— Tema chiaro / scuro —— */
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    const btn = el("themeBtn");
+    if (btn) btn.textContent = theme === "dark" ? "☀️" : "🌙";
+    try {
+      localStorage.setItem("fc_theme", theme);
+    } catch (_) {}
+  }
+
+  (function initTheme() {
+    let theme = "light";
+    try {
+      theme = localStorage.getItem("fc_theme") || theme;
+    } catch (_) {}
+    if (!localStorage.getItem("fc_theme") && window.matchMedia) {
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) theme = "dark";
+    }
+    applyTheme(theme);
+  })();
+
+  const themeBtn = el("themeBtn");
+  if (themeBtn) {
+    themeBtn.onclick = function () {
+      const cur = document.documentElement.getAttribute("data-theme") || "light";
+      applyTheme(cur === "dark" ? "light" : "dark");
+    };
+  }
+
   function currentLang() {
     return DECKS.find((d) => d.id === state.deckId)?.lang || "en-US";
   }
@@ -27,6 +56,14 @@
     render();
   }
 
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&")
+      .replace(/</g, "<")
+      .replace(/>/g, ">")
+      .replace(/"/g, """);
+  }
+
   function render() {
     const card = state.cards[state.index];
     const wrap = el("cardWrap");
@@ -36,26 +73,44 @@
     if (!wrap) return;
 
     if (!card) {
-      wrap.innerHTML = '<div style="padding:40px;text-align:center">Nessuna carta</div>';
+      wrap.innerHTML =
+        '<div class="flashcard"><div class="flashcard__face" style="position:relative">' +
+        '<div class="flashcard__text" style="font-size:1.1rem;font-weight:600">Nessuna carta</div>' +
+        '<div class="flashcard__hint">Cambia mazzo o filtri</div></div></div>';
       return;
     }
 
     const total = state.cards.length;
-    if (counter) counter.textContent = (state.index + 1) + " / " + total;
+    if (counter) counter.textContent = state.index + 1 + " / " + total;
     if (pct) pct.textContent = Math.round(((state.index + 1) / total) * 100) + "%";
     if (fill) fill.style.width = Math.round(((state.index + 1) / total) * 100) + "%";
 
-    const text = state.flipped ? card.back : card.front;
-    const emoji = card.emoji || "";
+    const front = escapeHtml(card.front || "");
+    const back = escapeHtml(card.back || "");
+    const emoji = card.emoji ? '<div class="flashcard__emoji">' + card.emoji + "</div>" : "";
+
     wrap.innerHTML =
-      '<div style="background:#fff;border-radius:16px;padding:24px;text-align:center;min-height:200px;box-shadow:0 4px 16px rgba(0,0,0,.08);position:relative">' +
-      '<button type="button" id="audioBtn" style="position:absolute;top:12px;left:12px;width:40px;height:40px;border-radius:50%;border:1px solid #e5e7eb;background:#fff;font-size:18px;cursor:pointer">🔊</button>' +
-      (emoji ? '<div style="font-size:3rem">' + emoji + "</div>" : "") +
-      '<div style="font-size:1.6rem;font-weight:700;margin-top:12px">' +
-      text +
+      '<div class="flashcard' +
+      (state.flipped ? " is-flipped" : "") +
+      '" id="flashcard">' +
+      '<button type="button" class="flashcard__audio" id="audioBtn" aria-label="Pronuncia">🔊</button>' +
+      '<div class="flashcard__inner">' +
+      '<div class="flashcard__face flashcard__face--front">' +
+      '<span class="flashcard__side-tag">Fronte</span>' +
+      emoji +
+      '<div class="flashcard__text">' +
+      front +
       "</div>" +
-      '<div style="color:#6b7280;font-size:0.85rem;margin-top:12px">' +
-      (state.flipped ? "Retro — tocca Gira per il fronte" : "Fronte — tocca Gira per la risposta") +
+      '<div class="flashcard__hint">Tocca o premi Gira per la risposta</div>' +
+      "</div>" +
+      '<div class="flashcard__face flashcard__face--back">' +
+      '<span class="flashcard__side-tag">Retro</span>' +
+      emoji +
+      '<div class="flashcard__text">' +
+      back +
+      "</div>" +
+      '<div class="flashcard__hint">Tocca per tornare al fronte</div>' +
+      "</div>" +
       "</div></div>";
 
     const audioBtn = el("audioBtn");
@@ -63,6 +118,18 @@
       audioBtn.onclick = function (e) {
         e.stopPropagation();
         speakCurrent();
+      };
+    }
+
+    const flash = el("flashcard");
+    if (flash) {
+      flash.onclick = function (e) {
+        if (e.target && e.target.id === "audioBtn") return;
+        state.flipped = !state.flipped;
+        flash.classList.toggle("is-flipped", state.flipped);
+        if (state.flipped && el("autoSpeak") && el("autoSpeak").checked) {
+          speakCurrent();
+        }
       };
     }
   }
@@ -165,7 +232,9 @@
   if (flipBtn) {
     flipBtn.onclick = function () {
       state.flipped = !state.flipped;
-      render();
+      const flash = el("flashcard");
+      if (flash) flash.classList.toggle("is-flipped", state.flipped);
+      else render();
       if (state.flipped && el("autoSpeak") && el("autoSpeak").checked) speakCurrent();
     };
   }
