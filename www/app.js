@@ -1,24 +1,72 @@
 (function () {
   "use strict";
 
-  const el = (id) => document.getElementById(id);
+  var el = function (id) { return document.getElementById(id); };
 
   if (typeof DECKS === "undefined") {
     console.error("[app.js] DECKS non trovato");
     return;
   }
 
-  const state = {
+  var KNOWN_INTERVAL_MS = 3 * 24 * 60 * 60 * 1000; // 3 giorni se "Lo sapevo"
+  var PROGRESS_PREFIX = "fc_progress_";
+
+  var state = {
     deckId: DECKS[0] && DECKS[0].id ? DECKS[0].id : "en",
     cards: [],
     index: 0,
     flipped: false,
   };
 
+  /* —— Progressi (localStorage) —— */
+  function cardKey(card) {
+    return String(card.front || "") + "\t" + String(card.back || "");
+  }
+
+  function loadProgress(deckId) {
+    try {
+      var raw = localStorage.getItem(PROGRESS_PREFIX + deckId);
+      if (!raw) return {};
+      var data = JSON.parse(raw);
+      return data && typeof data === "object" ? data : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function saveProgress(deckId, map) {
+    try {
+      localStorage.setItem(PROGRESS_PREFIX + deckId, JSON.stringify(map));
+    } catch (_) {}
+  }
+
+  function getCardProgress(card) {
+    var map = loadProgress(state.deckId);
+    return map[cardKey(card)] || null;
+  }
+
+  function setCardProgress(card, flag) {
+    var map = loadProgress(state.deckId);
+    var now = Date.now();
+    var due = flag === "known" ? now + KNOWN_INTERVAL_MS : now;
+    map[cardKey(card)] = { flag: flag, due: due, updated: now };
+    saveProgress(state.deckId, map);
+    updateStats();
+  }
+
+  function resetDeckProgress() {
+    try {
+      localStorage.removeItem(PROGRESS_PREFIX + state.deckId);
+    } catch (_) {}
+    updateStats();
+    applyFilters();
+    showToast("Progressi del mazzo azzerati", "success");
+  }
+
   /* —— Tema chiaro / scuro —— */
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
-    const btn = el("themeBtn");
+    var btn = el("themeBtn");
     if (btn) btn.textContent = theme === "dark" ? "\u2600\uFE0F" : "\uD83C\uDF19";
     try {
       localStorage.setItem("fc_theme", theme);
@@ -26,7 +74,7 @@
   }
 
   (function initTheme() {
-    let theme = "light";
+    var theme = "light";
     try {
       theme = localStorage.getItem("fc_theme") || theme;
     } catch (_) {}
@@ -38,61 +86,157 @@
     applyTheme(theme);
   })();
 
-  const themeBtn = el("themeBtn");
+  var themeBtn = el("themeBtn");
   if (themeBtn) {
     themeBtn.onclick = function () {
-      const cur = document.documentElement.getAttribute("data-theme") || "light";
+      var cur = document.documentElement.getAttribute("data-theme") || "light";
       applyTheme(cur === "dark" ? "light" : "dark");
     };
   }
 
   function currentLang() {
-    const d = DECKS.find(function (x) { return x.id === state.deckId; });
+    var d = DECKS.find(function (x) { return x.id === state.deckId; });
     return (d && d.lang) || "en-US";
-  }
-
-  function rebuild() {
-    const deck = DECKS.find(function (d) { return d.id === state.deckId; });
-    state.cards = ((deck && deck.cards) || []).slice();
-    state.index = 0;
-    state.flipped = false;
-    render();
   }
 
   function escapeHtml(s) {
     return String(s)
-      .replace(/&/g, "\u0026amp;")
-      .replace(/</g, "\u0026lt;")
-      .replace(/>/g, "\u0026gt;")
-      .replace(/"/g, "\u0026quot;");
+      .replace(/&/g, String.fromCharCode(38) + "amp;")
+      .replace(/</g, String.fromCharCode(38) + "lt;")
+      .replace(/>/g, String.fromCharCode(38) + "gt;")
+      .replace(/"/g, String.fromCharCode(38) + "quot;");
+  }
+
+  function showToast(msg, type) {
+    var t = el("toast");
+    if (!t) return;
+    t.textContent = msg;
+    t.className = "toast show" + (type ? " " + type : "");
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(function () {
+      t.className = "toast";
+    }, 2200);
+  }
+
+  function updateStats() {
+    var stats = el("stats");
+    if (!stats) return;
+    var deck = DECKS.find(function (d) { return d.id === state.deckId; });
+    var all = (deck && deck.cards) || [];
+    var map = loadProgress(state.deckId);
+    var now = Date.now();
+    var known = 0, review = 0, due = 0;
+    all.forEach(function (c) {
+      var p = map[cardKey(c)];
+      if (!p) {
+        due++;
+        return;
+      }
+      if (p.flag === "known") known++;
+      if (p.flag === "review") review++;
+      if ((p.due || 0) <= now) due++;
+    });
+    stats.textContent =
+      all.length +
+      " carte \u00b7 " +
+      known +
+      " sapute \u00b7 " +
+      review +
+      " da rivedere \u00b7 " +
+      due +
+      " in scadenza";
+  }
+
+  function applyFilters() {
+    var deck = DECKS.find(function (d) { return d.id === state.deckId; });
+    var cards = ((deck && deck.cards) || []).slice();
+
+    var theme = el("themeSelect") ? el("themeSelect").value : "";
+    var level = el("levelSelect") ? el("levelSelect").value : "";
+    if (theme) {
+      cards = cards.filter(function (c) { return c.theme === theme; });
+    }
+    if (level) {
+      cards = cards.filter(function (c) { return c.level === level; });
+    }
+
+    var reviewOnly = el("reviewOnly") && el("reviewOnly").checked;
+    var dueOnly = el("dueOnly") && el("dueOnly").checked;
+    var map = loadProgress(state.deckId);
+    var now = Date.now();
+
+    if (reviewOnly) {
+      cards = cards.filter(function (c) {
+        var p = map[cardKey(c)];
+        return p && p.flag === "review";
+      });
+    }
+    if (dueOnly) {
+      cards = cards.filter(function (c) {
+        var p = map[cardKey(c)];
+        // nuove (senza progresso) o con due scaduto
+        if (!p) return true;
+        return (p.due || 0) <= now;
+      });
+    }
+
+    state.cards = cards;
+    state.index = 0;
+    state.flipped = false;
+    render();
+    updateStats();
   }
 
   function render() {
-    const card = state.cards[state.index];
-    const wrap = el("cardWrap");
-    const counter = el("counter");
-    const pct = el("pct");
-    const fill = el("progressFill");
+    var card = state.cards[state.index];
+    var wrap = el("cardWrap");
+    var counter = el("counter");
+    var pct = el("pct");
+    var fill = el("progressFill");
     if (!wrap) return;
 
     if (!card) {
+      var emptyMsg = "Nessuna carta";
+      var emptyHint = "Cambia mazzo o filtri";
+      if (el("reviewOnly") && el("reviewOnly").checked) {
+        emptyMsg = "Nessuna da rivedere";
+        emptyHint = "Segna carte con \u2717 Da rivedere";
+      } else if (el("dueOnly") && el("dueOnly").checked) {
+        emptyMsg = "Niente in scadenza";
+        emptyHint = "Tutte le carte sono al giorno";
+      }
       wrap.innerHTML =
         '<div class="flashcard"><div class="flashcard__face" style="position:relative">' +
-        '<div class="flashcard__text" style="font-size:1.1rem;font-weight:600">Nessuna carta</div>' +
-        '<div class="flashcard__hint">Cambia mazzo o filtri</div></div></div>';
+        '<div class="flashcard__text" style="font-size:1.1rem;font-weight:600">' +
+        emptyMsg +
+        "</div>" +
+        '<div class="flashcard__hint">' +
+        emptyHint +
+        "</div></div></div>";
+      if (counter) counter.textContent = "0 / 0";
+      if (pct) pct.textContent = "0%";
+      if (fill) fill.style.width = "0%";
       return;
     }
 
-    const total = state.cards.length;
-    if (counter) counter.textContent = (state.index + 1) + " / " + total;
+    var total = state.cards.length;
+    if (counter) counter.textContent = state.index + 1 + " / " + total;
     if (pct) pct.textContent = Math.round(((state.index + 1) / total) * 100) + "%";
     if (fill) fill.style.width = Math.round(((state.index + 1) / total) * 100) + "%";
 
-    const front = escapeHtml(card.front || "");
-    const back = escapeHtml(card.back || "");
-    const emoji = card.emoji
+    var front = escapeHtml(card.front || "");
+    var back = escapeHtml(card.back || "");
+    var emoji = card.emoji
       ? '<div class="flashcard__emoji">' + card.emoji + "</div>"
       : "";
+
+    var prog = getCardProgress(card);
+    var statusTag = "";
+    if (prog && prog.flag === "review") {
+      statusTag = '<span class="flashcard__side-tag" style="left:auto;right:14px;top:48px;background:var(--danger-soft);color:var(--danger)">Da rivedere</span>';
+    } else if (prog && prog.flag === "known") {
+      statusTag = '<span class="flashcard__side-tag" style="left:auto;right:14px;top:48px;background:var(--success-soft);color:var(--success)">Saputa</span>';
+    }
 
     wrap.innerHTML =
       '<div class="flashcard' +
@@ -102,6 +246,7 @@
       '<div class="flashcard__inner">' +
       '<div class="flashcard__face flashcard__face--front">' +
       '<span class="flashcard__side-tag">Fronte</span>' +
+      statusTag +
       emoji +
       '<div class="flashcard__text">' +
       front +
@@ -118,7 +263,7 @@
       "</div>" +
       "</div></div>";
 
-    const audioBtn = el("audioBtn");
+    var audioBtn = el("audioBtn");
     if (audioBtn) {
       audioBtn.onclick = function (e) {
         e.stopPropagation();
@@ -126,7 +271,7 @@
       };
     }
 
-    const flash = el("flashcard");
+    var flash = el("flashcard");
     if (flash) {
       flash.onclick = function (e) {
         if (e.target && e.target.id === "audioBtn") return;
@@ -140,24 +285,24 @@
   }
 
   function speakCurrent() {
-    const card = state.cards[state.index];
+    var card = state.cards[state.index];
     if (!card || !window.TTS) return;
-    const text = state.flipped ? card.back : card.front;
-    const lang = state.flipped ? currentLang() : "it-IT";
+    var text = state.flipped ? card.back : card.front;
+    var lang = state.flipped ? currentLang() : "it-IT";
     TTS.speak(text, lang);
   }
 
   function fillThemesAndLevels() {
-    const themeSel = el("themeSelect");
-    const levelSel = el("levelSelect");
+    var themeSel = el("themeSelect");
+    var levelSel = el("levelSelect");
     if (themeSel && typeof THEMES !== "undefined" && Array.isArray(THEMES)) {
       themeSel.innerHTML = "";
-      const all = document.createElement("option");
-      all.value = "";
-      all.textContent = "Tutti i temi";
-      themeSel.appendChild(all);
+      var allT = document.createElement("option");
+      allT.value = "";
+      allT.textContent = "Tutti i temi";
+      themeSel.appendChild(allT);
       THEMES.forEach(function (t) {
-        const o = document.createElement("option");
+        var o = document.createElement("option");
         o.value = t.id;
         o.textContent = (t.emoji ? t.emoji + " " : "") + t.name;
         themeSel.appendChild(o);
@@ -165,12 +310,12 @@
     }
     if (levelSel && typeof LEVELS !== "undefined" && Array.isArray(LEVELS)) {
       levelSel.innerHTML = "";
-      const all = document.createElement("option");
-      all.value = "";
-      all.textContent = "Tutti i livelli";
-      levelSel.appendChild(all);
+      var allL = document.createElement("option");
+      allL.value = "";
+      allL.textContent = "Tutti i livelli";
+      levelSel.appendChild(allL);
       LEVELS.forEach(function (lv) {
-        const o = document.createElement("option");
+        var o = document.createElement("option");
         o.value = lv.id;
         o.textContent = lv.name;
         levelSel.appendChild(o);
@@ -178,32 +323,15 @@
     }
   }
 
-  function applyFilters() {
-    const deck = DECKS.find(function (d) { return d.id === state.deckId; });
-    let cards = ((deck && deck.cards) || []).slice();
-    const theme = el("themeSelect") ? el("themeSelect").value : "";
-    const level = el("levelSelect") ? el("levelSelect").value : "";
-    if (theme) {
-      cards = cards.filter(function (c) { return c.theme === theme; });
-    }
-    if (level) {
-      cards = cards.filter(function (c) { return c.level === level; });
-    }
-    state.cards = cards;
-    state.index = 0;
-    state.flipped = false;
-    render();
-  }
-
   function renderVoicePanel() {
-    const badge = el("voiceBadge");
-    const select = el("voiceSelect");
-    const hint = el("voiceHint");
-    const testBtn = el("voiceTestBtn");
-    const resetBtn = el("voiceResetBtn");
+    var badge = el("voiceBadge");
+    var select = el("voiceSelect");
+    var hint = el("voiceHint");
+    var testBtn = el("voiceTestBtn");
+    var resetBtn = el("voiceResetBtn");
     if (!badge) return;
 
-    const hasCap =
+    var hasCap =
       typeof window.Capacitor !== "undefined" &&
       (window.Capacitor.isNativePlatform
         ? window.Capacitor.isNativePlatform()
@@ -235,8 +363,8 @@
       return;
     }
 
-    const lang = currentLang();
-    const voices = (TTS.getVoices && TTS.getVoices(lang)) || [];
+    var lang = currentLang();
+    var voices = (TTS.getVoices && TTS.getVoices(lang)) || [];
     badge.textContent = voices.length
       ? voices.length + " voci \u00b7 " + lang
       : "TTS attivo \u00b7 " + lang;
@@ -244,12 +372,12 @@
 
     if (select) {
       select.innerHTML = "";
-      const auto = document.createElement("option");
+      var auto = document.createElement("option");
       auto.value = "";
       auto.textContent = "Automatica (migliore)";
       select.appendChild(auto);
       voices.forEach(function (v) {
-        const o = document.createElement("option");
+        var o = document.createElement("option");
         o.value = v.name || v.lang || "";
         o.textContent = v.name || v.lang || "voce";
         select.appendChild(o);
@@ -265,11 +393,24 @@
     }
   }
 
-  const deckSel = el("deckSelect");
+  function goNextAfterRate() {
+    if (state.index < state.cards.length - 1) {
+      state.index++;
+      state.flipped = false;
+      render();
+    } else {
+      // ultima carta: ricalcola filtri (puo uscire dalla lista)
+      applyFilters();
+      showToast("Fine della lista", "success");
+    }
+  }
+
+  /* —— Select mazzo / filtri —— */
+  var deckSel = el("deckSelect");
   if (deckSel) {
     deckSel.innerHTML = "";
     DECKS.forEach(function (d) {
-      const o = document.createElement("option");
+      var o = document.createElement("option");
       o.value = d.id;
       o.textContent =
         (d.flag || "") + " " + d.name + " (" + ((d.cards && d.cards.length) || 0) + ")";
@@ -285,27 +426,29 @@
 
   fillThemesAndLevels();
 
-  const themeSel = el("themeSelect");
-  if (themeSel) {
-    themeSel.onchange = function () { applyFilters(); };
-  }
-  const levelSel = el("levelSelect");
-  if (levelSel) {
-    levelSel.onchange = function () { applyFilters(); };
-  }
+  var themeSel = el("themeSelect");
+  if (themeSel) themeSel.onchange = function () { applyFilters(); };
+  var levelSel = el("levelSelect");
+  if (levelSel) levelSel.onchange = function () { applyFilters(); };
 
-  const flipBtn = el("flipBtn");
+  var reviewOnlyEl = el("reviewOnly");
+  if (reviewOnlyEl) reviewOnlyEl.onchange = function () { applyFilters(); };
+  var dueOnlyEl = el("dueOnly");
+  if (dueOnlyEl) dueOnlyEl.onchange = function () { applyFilters(); };
+
+  /* —— Navigazione —— */
+  var flipBtn = el("flipBtn");
   if (flipBtn) {
     flipBtn.onclick = function () {
       state.flipped = !state.flipped;
-      const flash = el("flashcard");
+      var flash = el("flashcard");
       if (flash) flash.classList.toggle("is-flipped", state.flipped);
       else render();
       if (state.flipped && el("autoSpeak") && el("autoSpeak").checked) speakCurrent();
     };
   }
 
-  const nextBtn = el("nextBtn");
+  var nextBtn = el("nextBtn");
   if (nextBtn) {
     nextBtn.onclick = function () {
       if (state.index < state.cards.length - 1) {
@@ -316,7 +459,7 @@
     };
   }
 
-  const prevBtn = el("prevBtn");
+  var prevBtn = el("prevBtn");
   if (prevBtn) {
     prevBtn.onclick = function () {
       if (state.index > 0) {
@@ -327,15 +470,97 @@
     };
   }
 
-  const voiceTestBtn = el("voiceTestBtn");
-  if (voiceTestBtn) {
-    voiceTestBtn.onclick = function () {
-      speakCurrent();
+  /* —— Valutazione —— */
+  var knowBtn = el("knowBtn");
+  if (knowBtn) {
+    knowBtn.onclick = function () {
+      var card = state.cards[state.index];
+      if (!card) return;
+      setCardProgress(card, "known");
+      showToast("Segnata come saputa", "success");
+      goNextAfterRate();
     };
   }
 
-  const voiceHeader = el("voiceHeader");
-  const voicePanel = el("voicePanel");
+  var reviewBtn = el("reviewBtn");
+  if (reviewBtn) {
+    reviewBtn.onclick = function () {
+      var card = state.cards[state.index];
+      if (!card) return;
+      setCardProgress(card, "review");
+      showToast("Segnata da rivedere");
+      goNextAfterRate();
+    };
+  }
+
+  /* —— Export / Import / Reset —— */
+  var exportBtn = el("exportBtn");
+  if (exportBtn) {
+    exportBtn.onclick = function () {
+      var payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        progress: {},
+      };
+      DECKS.forEach(function (d) {
+        payload.progress[d.id] = loadProgress(d.id);
+      });
+      var blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json",
+      });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "flashcard-progress.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast("Export scaricato", "success");
+    };
+  }
+
+  var importBtn = el("importBtn");
+  var importFile = el("importFile");
+  if (importBtn && importFile) {
+    importBtn.onclick = function () { importFile.click(); };
+    importFile.onchange = function () {
+      var file = importFile.files && importFile.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var data = JSON.parse(String(reader.result || ""));
+          var prog = data.progress || data;
+          Object.keys(prog).forEach(function (deckId) {
+            if (prog[deckId] && typeof prog[deckId] === "object") {
+              saveProgress(deckId, prog[deckId]);
+            }
+          });
+          applyFilters();
+          showToast("Import completato", "success");
+        } catch (err) {
+          showToast("File non valido", "error");
+        }
+        importFile.value = "";
+      };
+      reader.readAsText(file);
+    };
+  }
+
+  var resetBtn = el("resetBtn");
+  if (resetBtn) {
+    resetBtn.onclick = function () {
+      if (confirm("Azzerare i progressi del mazzo corrente?")) {
+        resetDeckProgress();
+      }
+    };
+  }
+
+  var voiceTestBtn = el("voiceTestBtn");
+  if (voiceTestBtn) {
+    voiceTestBtn.onclick = function () { speakCurrent(); };
+  }
+
+  var voiceHeader = el("voiceHeader");
+  var voicePanel = el("voicePanel");
   if (voiceHeader && voicePanel) {
     voiceHeader.onclick = function () {
       voicePanel.classList.toggle("open");
@@ -347,9 +572,7 @@
 
   if (window.TTS) {
     if (TTS.onVoicesReady) {
-      TTS.onVoicesReady(function () {
-        renderVoicePanel();
-      });
+      TTS.onVoicesReady(function () { renderVoicePanel(); });
     }
     var tries = 0;
     var retry = setInterval(function () {
