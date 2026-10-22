@@ -10,19 +10,45 @@
 
   var KNOWN_INTERVAL_MS = 3 * 24 * 60 * 60 * 1000; // 3 giorni se "Lo sapevo"
   var PROGRESS_PREFIX = "fc_progress_";
+  var SESSION_KEY = "fc_session";
 
   var state = {
     deckId: DECKS[0] && DECKS[0].id ? DECKS[0].id : "en",
     cards: [],
     index: 0,
     flipped: false,
+    // chiave della carta corrente (per riprendere dove si era)
+    resumeKey: null,
   };
 
-  /* —— Progressi (localStorage) —— */
   function cardKey(card) {
     return String(card.front || "") + "\t" + String(card.back || "");
   }
 
+  function loadSession() {
+    try {
+      var raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      return data && typeof data === "object" ? data : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function saveSession() {
+    try {
+      var card = state.cards[state.index];
+      var payload = {
+        deckId: state.deckId,
+        cardKey: card ? cardKey(card) : state.resumeKey,
+        index: state.index,
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+    } catch (_) {}
+  }
+
+  /* —— Progressi (localStorage) —— */
   function loadProgress(deckId) {
     try {
       var raw = localStorage.getItem(PROGRESS_PREFIX + deckId);
@@ -59,7 +85,7 @@
       localStorage.removeItem(PROGRESS_PREFIX + state.deckId);
     } catch (_) {}
     updateStats();
-    applyFilters();
+    applyFilters({ resetIndex: true });
     showToast("Progressi del mazzo azzerati", "success");
   }
 
@@ -147,7 +173,15 @@
       " in scadenza";
   }
 
-  function applyFilters() {
+  function applyFilters(opts) {
+    opts = opts || {};
+    var keepPosition = opts.keepPosition !== false;
+    var preferKey = opts.preferKey || state.resumeKey;
+
+    if (keepPosition && !preferKey && state.cards[state.index]) {
+      preferKey = cardKey(state.cards[state.index]);
+    }
+
     var deck = DECKS.find(function (d) { return d.id === state.deckId; });
     var cards = ((deck && deck.cards) || []).slice();
 
@@ -174,15 +208,31 @@
     if (dueOnly) {
       cards = cards.filter(function (c) {
         var p = map[cardKey(c)];
-        // nuove (senza progresso) o con due scaduto
         if (!p) return true;
         return (p.due || 0) <= now;
       });
     }
 
     state.cards = cards;
-    state.index = 0;
     state.flipped = false;
+
+    var newIndex = 0;
+    if (opts.resetIndex) {
+      newIndex = 0;
+    } else if (keepPosition && preferKey) {
+      var found = -1;
+      for (var i = 0; i < cards.length; i++) {
+        if (cardKey(cards[i]) === preferKey) {
+          found = i;
+          break;
+        }
+      }
+      if (found >= 0) newIndex = found;
+    }
+
+    state.index = cards.length ? Math.min(newIndex, cards.length - 1) : 0;
+    if (cards[state.index]) state.resumeKey = cardKey(cards[state.index]);
+    saveSession();
     render();
     updateStats();
   }
@@ -394,13 +444,27 @@
   }
 
   function goNextAfterRate() {
-    if (state.index < state.cards.length - 1) {
-      state.index++;
-      state.flipped = false;
-      render();
-    } else {
-      // ultima carta: ricalcola filtri (puo uscire dalla lista)
-      applyFilters();
+    var current = state.cards[state.index];
+    var currentKey = current ? cardKey(current) : null;
+    var nextKey = null;
+    if (state.index < state.cards.length - 1 && state.cards[state.index + 1]) {
+      nextKey = cardKey(state.cards[state.index + 1]);
+    }
+
+    state.resumeKey = nextKey || currentKey;
+    applyFilters({ keepPosition: true, preferKey: nextKey || currentKey });
+
+    if (currentKey && state.cards[state.index] && cardKey(state.cards[state.index]) === currentKey) {
+      if (state.index < state.cards.length - 1) {
+        state.index++;
+        state.flipped = false;
+        if (state.cards[state.index]) state.resumeKey = cardKey(state.cards[state.index]);
+        saveSession();
+        render();
+      } else {
+        showToast("Fine della lista", "success");
+      }
+    } else if (!state.cards.length) {
       showToast("Fine della lista", "success");
     }
   }
@@ -419,7 +483,12 @@
     deckSel.value = state.deckId;
     deckSel.onchange = function () {
       state.deckId = deckSel.value;
-      applyFilters();
+      state.resumeKey = null;
+      var sess = loadSession();
+      if (sess && sess.deckId === state.deckId && sess.cardKey) {
+        state.resumeKey = sess.cardKey;
+      }
+      applyFilters({ keepPosition: true, preferKey: state.resumeKey, resetIndex: !state.resumeKey });
       renderVoicePanel();
     };
   }
@@ -427,14 +496,14 @@
   fillThemesAndLevels();
 
   var themeSel = el("themeSelect");
-  if (themeSel) themeSel.onchange = function () { applyFilters(); };
+  if (themeSel) themeSel.onchange = function () { applyFilters({ resetIndex: true }); };
   var levelSel = el("levelSelect");
-  if (levelSel) levelSel.onchange = function () { applyFilters(); };
+  if (levelSel) levelSel.onchange = function () { applyFilters({ resetIndex: true }); };
 
   var reviewOnlyEl = el("reviewOnly");
-  if (reviewOnlyEl) reviewOnlyEl.onchange = function () { applyFilters(); };
+  if (reviewOnlyEl) reviewOnlyEl.onchange = function () { applyFilters({ resetIndex: true }); };
   var dueOnlyEl = el("dueOnly");
-  if (dueOnlyEl) dueOnlyEl.onchange = function () { applyFilters(); };
+  if (dueOnlyEl) dueOnlyEl.onchange = function () { applyFilters({ resetIndex: true }); };
 
   /* —— Navigazione —— */
   var flipBtn = el("flipBtn");
@@ -454,6 +523,8 @@
       if (state.index < state.cards.length - 1) {
         state.index++;
         state.flipped = false;
+        if (state.cards[state.index]) state.resumeKey = cardKey(state.cards[state.index]);
+        saveSession();
         render();
       }
     };
@@ -465,6 +536,8 @@
       if (state.index > 0) {
         state.index--;
         state.flipped = false;
+        if (state.cards[state.index]) state.resumeKey = cardKey(state.cards[state.index]);
+        saveSession();
         render();
       }
     };
@@ -534,7 +607,7 @@
               saveProgress(deckId, prog[deckId]);
             }
           });
-          applyFilters();
+          applyFilters({ keepPosition: true });
           showToast("Import completato", "success");
         } catch (err) {
           showToast("File non valido", "error");
@@ -567,7 +640,19 @@
     };
   }
 
-  applyFilters();
+  // Ripristina mazzo e posizione dall'ultima sessione
+  (function restoreSession() {
+    var sess = loadSession();
+    if (!sess) return;
+    var exists = DECKS.some(function (d) { return d.id === sess.deckId; });
+    if (exists) {
+      state.deckId = sess.deckId;
+      state.resumeKey = sess.cardKey || null;
+      if (deckSel) deckSel.value = state.deckId;
+    }
+  })();
+
+  applyFilters({ keepPosition: true, preferKey: state.resumeKey });
   renderVoicePanel();
 
   if (window.TTS) {
