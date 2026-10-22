@@ -9,7 +9,7 @@
   }
 
   const state = {
-    deckId: DECKS[0]?.id || "en",
+    deckId: DECKS[0] && DECKS[0].id ? DECKS[0].id : "en",
     cards: [],
     index: 0,
     flipped: false,
@@ -19,7 +19,7 @@
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     const btn = el("themeBtn");
-    if (btn) btn.textContent = theme === "dark" ? "☀️" : "🌙";
+    if (btn) btn.textContent = theme === "dark" ? "\u2600\uFE0F" : "\uD83C\uDF19";
     try {
       localStorage.setItem("fc_theme", theme);
     } catch (_) {}
@@ -30,9 +30,11 @@
     try {
       theme = localStorage.getItem("fc_theme") || theme;
     } catch (_) {}
-    if (!localStorage.getItem("fc_theme") && window.matchMedia) {
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) theme = "dark";
-    }
+    try {
+      if (!localStorage.getItem("fc_theme") && window.matchMedia) {
+        if (window.matchMedia("(prefers-color-scheme: dark)").matches) theme = "dark";
+      }
+    } catch (_) {}
     applyTheme(theme);
   })();
 
@@ -45,12 +47,13 @@
   }
 
   function currentLang() {
-    return DECKS.find((d) => d.id === state.deckId)?.lang || "en-US";
+    const d = DECKS.find(function (x) { return x.id === state.deckId; });
+    return (d && d.lang) || "en-US";
   }
 
   function rebuild() {
-    const deck = DECKS.find((d) => d.id === state.deckId);
-    state.cards = (deck?.cards || []).slice();
+    const deck = DECKS.find(function (d) { return d.id === state.deckId; });
+    state.cards = ((deck && deck.cards) || []).slice();
     state.index = 0;
     state.flipped = false;
     render();
@@ -58,10 +61,10 @@
 
   function escapeHtml(s) {
     return String(s)
-      .replace(/&/g, "&")
-      .replace(/</g, "<")
-      .replace(/>/g, ">")
-      .replace(/"/g, """);
+      .replace(/&/g, "\u0026amp;")
+      .replace(/</g, "\u0026lt;")
+      .replace(/>/g, "\u0026gt;")
+      .replace(/"/g, "\u0026quot;");
   }
 
   function render() {
@@ -81,19 +84,21 @@
     }
 
     const total = state.cards.length;
-    if (counter) counter.textContent = state.index + 1 + " / " + total;
+    if (counter) counter.textContent = (state.index + 1) + " / " + total;
     if (pct) pct.textContent = Math.round(((state.index + 1) / total) * 100) + "%";
     if (fill) fill.style.width = Math.round(((state.index + 1) / total) * 100) + "%";
 
     const front = escapeHtml(card.front || "");
     const back = escapeHtml(card.back || "");
-    const emoji = card.emoji ? '<div class="flashcard__emoji">' + card.emoji + "</div>" : "";
+    const emoji = card.emoji
+      ? '<div class="flashcard__emoji">' + card.emoji + "</div>"
+      : "";
 
     wrap.innerHTML =
       '<div class="flashcard' +
       (state.flipped ? " is-flipped" : "") +
       '" id="flashcard">' +
-      '<button type="button" class="flashcard__audio" id="audioBtn" aria-label="Pronuncia">🔊</button>' +
+      '<button type="button" class="flashcard__audio" id="audioBtn" aria-label="Pronuncia">\uD83D\uDD0A</button>' +
       '<div class="flashcard__inner">' +
       '<div class="flashcard__face flashcard__face--front">' +
       '<span class="flashcard__side-tag">Fronte</span>' +
@@ -142,6 +147,54 @@
     TTS.speak(text, lang);
   }
 
+  function fillThemesAndLevels() {
+    const themeSel = el("themeSelect");
+    const levelSel = el("levelSelect");
+    if (themeSel && typeof THEMES !== "undefined" && Array.isArray(THEMES)) {
+      themeSel.innerHTML = "";
+      const all = document.createElement("option");
+      all.value = "";
+      all.textContent = "Tutti i temi";
+      themeSel.appendChild(all);
+      THEMES.forEach(function (t) {
+        const o = document.createElement("option");
+        o.value = t.id;
+        o.textContent = (t.emoji ? t.emoji + " " : "") + t.name;
+        themeSel.appendChild(o);
+      });
+    }
+    if (levelSel && typeof LEVELS !== "undefined" && Array.isArray(LEVELS)) {
+      levelSel.innerHTML = "";
+      const all = document.createElement("option");
+      all.value = "";
+      all.textContent = "Tutti i livelli";
+      levelSel.appendChild(all);
+      LEVELS.forEach(function (lv) {
+        const o = document.createElement("option");
+        o.value = lv.id;
+        o.textContent = lv.name;
+        levelSel.appendChild(o);
+      });
+    }
+  }
+
+  function applyFilters() {
+    const deck = DECKS.find(function (d) { return d.id === state.deckId; });
+    let cards = ((deck && deck.cards) || []).slice();
+    const theme = el("themeSelect") ? el("themeSelect").value : "";
+    const level = el("levelSelect") ? el("levelSelect").value : "";
+    if (theme) {
+      cards = cards.filter(function (c) { return c.theme === theme; });
+    }
+    if (level) {
+      cards = cards.filter(function (c) { return c.level === level; });
+    }
+    state.cards = cards;
+    state.index = 0;
+    state.flipped = false;
+    render();
+  }
+
   function renderVoicePanel() {
     const badge = el("voiceBadge");
     const select = el("voiceSelect");
@@ -156,14 +209,14 @@
         ? window.Capacitor.isNativePlatform()
         : false);
 
-    if (window.TTS && hasCap && !TTS.isReady()) {
-      badge.textContent = "Caricamento TTS…";
+    if (window.TTS && hasCap && TTS.isReady && !TTS.isReady()) {
+      badge.textContent = "Caricamento TTS\u2026";
       badge.className = "badge";
       if (select) {
-        select.innerHTML = "<option>Inizializzazione…</option>";
+        select.innerHTML = "<option>Inizializzazione\u2026</option>";
         select.disabled = true;
       }
-      if (hint) hint.textContent = "Attendo il motore vocale nativo Android…";
+      if (hint) hint.textContent = "Attendo il motore vocale nativo Android\u2026";
       return;
     }
 
@@ -183,10 +236,10 @@
     }
 
     const lang = currentLang();
-    const voices = TTS.getVoices(lang) || [];
+    const voices = (TTS.getVoices && TTS.getVoices(lang)) || [];
     badge.textContent = voices.length
-      ? voices.length + " voci · " + lang
-      : "TTS attivo · " + lang;
+      ? voices.length + " voci \u00b7 " + lang
+      : "TTS attivo \u00b7 " + lang;
     badge.className = "badge good";
 
     if (select) {
@@ -214,18 +267,31 @@
 
   const deckSel = el("deckSelect");
   if (deckSel) {
+    deckSel.innerHTML = "";
     DECKS.forEach(function (d) {
       const o = document.createElement("option");
       o.value = d.id;
-      o.textContent = (d.flag || "") + " " + d.name + " (" + (d.cards || []).length + ")";
+      o.textContent =
+        (d.flag || "") + " " + d.name + " (" + ((d.cards && d.cards.length) || 0) + ")";
       deckSel.appendChild(o);
     });
     deckSel.value = state.deckId;
     deckSel.onchange = function () {
       state.deckId = deckSel.value;
-      rebuild();
+      applyFilters();
       renderVoicePanel();
     };
+  }
+
+  fillThemesAndLevels();
+
+  const themeSel = el("themeSelect");
+  if (themeSel) {
+    themeSel.onchange = function () { applyFilters(); };
+  }
+  const levelSel = el("levelSelect");
+  if (levelSel) {
+    levelSel.onchange = function () { applyFilters(); };
   }
 
   const flipBtn = el("flipBtn");
@@ -276,13 +342,15 @@
     };
   }
 
-  rebuild();
+  applyFilters();
   renderVoicePanel();
 
   if (window.TTS) {
-    TTS.onVoicesReady(function () {
-      renderVoicePanel();
-    });
+    if (TTS.onVoicesReady) {
+      TTS.onVoicesReady(function () {
+        renderVoicePanel();
+      });
+    }
     var tries = 0;
     var retry = setInterval(function () {
       tries++;
