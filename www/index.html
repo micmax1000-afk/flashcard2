@@ -1,180 +1,571 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#3b82f6" />
   <title>Flashcard – Impara le lingue</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #f5f7fb; --card-bg: #ffffff; --text: #1f2937; --muted: #6b7280;
-      --accent: #3b82f6; --accent-dark: #2563eb; --success: #10b981; --danger: #ef4444;
-      --warn: #f59e0b; --border: #e5e7eb; --shadow: 0 4px 16px rgba(0,0,0,.08); --radius: 16px;
+
+    :root, [data-theme="light"] {
+      --bg: #f0f4f8;
+      --bg-grad: linear-gradient(160deg, #eef2ff 0%, #f0f9ff 40%, #f8fafc 100%);
+      --surface: #ffffff;
+      --surface-2: #f1f5f9;
+      --surface-3: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --accent-soft: rgba(59, 130, 246, 0.12);
+      --success: #10b981;
+      --success-soft: rgba(16, 185, 129, 0.12);
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.12);
+      --warn: #f59e0b;
+      --warn-soft: rgba(245, 158, 11, 0.15);
+      --shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 12px 40px rgba(15, 23, 42, 0.12);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-pill: 999px;
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --safe-t: env(safe-area-inset-top, 0px);
     }
+
+    [data-theme="dark"] {
+      --bg: #0b1220;
+      --bg-grad: linear-gradient(160deg, #0b1220 0%, #111827 50%, #0f172a 100%);
+      --surface: #1e293b;
+      --surface-2: #334155;
+      --surface-3: #475569;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --border: #334155;
+      --accent: #60a5fa;
+      --accent-hover: #3b82f6;
+      --accent-soft: rgba(96, 165, 250, 0.15);
+      --success: #34d399;
+      --success-soft: rgba(52, 211, 153, 0.15);
+      --danger: #f87171;
+      --danger-soft: rgba(248, 113, 113, 0.15);
+      --warn: #fbbf24;
+      --warn-soft: rgba(251, 191, 36, 0.15);
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    html { color-scheme: light dark; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px;
-      display: flex; flex-direction: column; align-items: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      background: var(--bg);
+      background-image: var(--bg-grad);
+      color: var(--text);
+      min-height: 100dvh;
+      padding: calc(12px + var(--safe-t)) 14px calc(20px + var(--safe-b));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      -webkit-font-smoothing: antialiased;
     }
-    header { width: 100%; max-width: 720px; margin-bottom: 16px; text-align: center; }
-    header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
-    header p  { font-size: 0.85rem; color: var(--muted); }
+
+    .shell {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 4px 2px;
+    }
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .brand h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .brand p {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .theme-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1.15rem;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      box-shadow: var(--shadow);
+      transition: transform 0.15s, background 0.15s;
+    }
+    .theme-btn:active { transform: scale(0.94); }
+
+    /* Filters */
     .controls {
-      width: 100%; max-width: 720px; display: grid; grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px; margin-bottom: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
     }
-    @media (max-width: 560px) { .controls { grid-template-columns: 1fr; } }
-    .controls label {
-      display: block; font-size: 0.7rem; text-transform: uppercase;
-      letter-spacing: .05em; color: var(--muted); margin-bottom: 4px;
+    @media (max-width: 380px) {
+      .controls { grid-template-columns: 1fr; }
     }
-    .controls select {
-      width: 100%; padding: 10px 12px; border-radius: 10px;
-      border: 1px solid var(--border); background: var(--card-bg);
-      font-size: 0.9rem; color: var(--text); cursor: pointer;
+    .field label {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 4px;
     }
+    .field select {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.9rem;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+
+    /* Extras / toggles */
     .extras {
-      width: 100%; max-width: 720px; display: flex; flex-wrap: wrap; gap: 10px;
-      align-items: center; margin-bottom: 12px; padding: 10px 12px;
-      background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
-      font-size: 0.85rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
     }
-    .extras label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-    .extras input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
-    .extras .tool-btn {
-      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
-      background: transparent; font-size: 0.8rem; color: var(--text); cursor: pointer;
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 6px 10px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-2);
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      border: 1px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
     }
-    .extras .tool-btn.danger { color: var(--danger); border-color: var(--danger); }
-    .extras .spacer { flex: 1; }
+    .chip input {
+      accent-color: var(--accent);
+      width: 15px;
+      height: 15px;
+      margin: 0;
+    }
+    .chip:has(input:checked) {
+      background: var(--accent-soft);
+      border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+      color: var(--accent-hover);
+    }
+    .tool-row {
+      display: flex;
+      gap: 6px;
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+    .tool-btn {
+      padding: 7px 11px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      min-height: 36px;
+      transition: background 0.15s;
+    }
+    .tool-btn:active { background: var(--surface-2); }
+    .tool-btn.danger {
+      color: var(--danger);
+      border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
+    }
+
+    /* Voice panel */
     .voice-panel {
-      width: 100%; max-width: 720px; background: var(--card-bg);
-      border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
     }
     .voice-header {
-      display: flex; align-items: center; gap: 8px; padding: 12px 14px; cursor: pointer;
-      user-select: none; font-size: 0.9rem; font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.9rem;
+      font-weight: 600;
     }
-    .voice-header .chev { transition: transform .2s; font-size: 0.7rem; color: var(--muted); }
+    .voice-header .chev {
+      transition: transform 0.2s;
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
     .voice-panel.open .voice-header .chev { transform: rotate(90deg); }
     .badge {
-      margin-left: auto; font-size: 0.7rem; font-weight: 700; padding: 3px 8px;
-      border-radius: 999px; background: var(--border); color: var(--muted);
+      margin-left: auto;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-2);
+      color: var(--muted);
     }
-    .badge.warn { background: #fef3c7; color: #b45309; }
-    .badge.good { background: #d1fae5; color: #047857; }
+    .badge.warn { background: var(--warn-soft); color: #b45309; }
+    [data-theme="dark"] .badge.warn { color: var(--warn); }
+    .badge.good { background: var(--success-soft); color: #047857; }
+    [data-theme="dark"] .badge.good { color: var(--success); }
     .voice-body { display: none; padding: 0 14px 14px; }
     .voice-panel.open .voice-body { display: block; }
-    .voice-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .voice-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
     .voice-row select {
-      flex: 1; min-width: 160px; padding: 10px; border-radius: 10px;
-      border: 1px solid var(--border); background: var(--card-bg); font-size: 0.9rem;
+      flex: 1;
+      min-width: 140px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 0.88rem;
     }
     .small-btn {
-      padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--card-bg); font-size: 0.85rem; cursor: pointer; min-height: 44px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 42px;
     }
-    .voice-hint { font-size: 0.8rem; color: var(--muted); line-height: 1.45; }
+    .voice-hint {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    /* Progress */
     .progress {
-      width: 100%; max-width: 720px; display: flex; align-items: center; gap: 8px;
-      font-size: 0.8rem; color: var(--muted); margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
     }
-    .progress-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-    .progress-bar > div { height: 100%; background: var(--accent); width: 0; transition: width .25s; }
-    .card-wrap { width: 100%; max-width: 720px; min-height: 240px; margin-bottom: 12px; }
+    .progress-bar {
+      flex: 1;
+      height: 7px;
+      background: var(--surface-3);
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+    }
+    .progress-bar > div {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #818cf8);
+      width: 0;
+      border-radius: var(--radius-pill);
+      transition: width 0.3s cubic-bezier(0.2, 0.7, 0.3, 1);
+    }
+
+    /* Flashcard 3D */
+    .card-wrap {
+      min-height: 260px;
+      perspective: 1400px;
+    }
+    .flashcard {
+      position: relative;
+      width: 100%;
+      min-height: 260px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .flashcard__inner {
+      position: relative;
+      width: 100%;
+      min-height: 260px;
+      transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.3, 1);
+      transform-style: preserve-3d;
+    }
+    .flashcard.is-flipped .flashcard__inner {
+      transform: rotateY(180deg);
+    }
+    .flashcard__face {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      padding: 28px 22px 24px;
+      border-radius: calc(var(--radius) + 2px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-lg);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      text-align: center;
+    }
+    .flashcard__face--back {
+      transform: rotateY(180deg);
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+      background:
+        linear-gradient(160deg, var(--accent-soft), transparent 55%),
+        var(--surface);
+    }
+    .flashcard__emoji {
+      font-size: 2.75rem;
+      line-height: 1;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.08));
+    }
+    .flashcard__text {
+      font-size: clamp(1.35rem, 5.5vw, 1.85rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+    .flashcard__hint {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .flashcard__audio {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 1.05rem;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      box-shadow: var(--shadow);
+      z-index: 2;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .flashcard__audio:active {
+      transform: scale(0.92);
+      background: var(--accent-soft);
+    }
+    .flashcard__side-tag {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      background: var(--surface-2);
+      padding: 4px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    /* Actions */
     .actions {
-      width: 100%; max-width: 720px; display: grid; grid-template-columns: 1fr 1.2fr 1fr;
-      gap: 8px; margin-bottom: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1.25fr 1fr;
+      gap: 8px;
     }
-    .actions.secondary { grid-template-columns: 1fr 1fr; }
+    .actions.secondary {
+      grid-template-columns: 1fr 1fr;
+    }
     .btn {
-      padding: 14px; border-radius: 12px; font-size: 0.95rem; font-weight: 600;
-      cursor: pointer; background: var(--card-bg); color: var(--text);
-      border: 1px solid var(--border); min-height: 48px;
+      padding: 14px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.92rem;
+      font-weight: 650;
+      cursor: pointer;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      min-height: 50px;
+      box-shadow: var(--shadow);
+      transition: transform 0.12s, background 0.15s, border-color 0.15s;
     }
-    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .btn.success { background: var(--success); color: #fff; border-color: var(--success); }
-    .btn.danger  { background: var(--danger);  color: #fff; border-color: var(--danger); }
-    .btn:disabled { opacity: .4; cursor: not-allowed; }
-    footer { width: 100%; max-width: 720px; text-align: center; font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent);
+    }
+    .btn.primary:active:not(:disabled) {
+      background: var(--accent-hover);
+    }
+    .btn.success {
+      background: var(--success);
+      color: #fff;
+      border-color: var(--success);
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--success) 30%, transparent);
+    }
+    .btn.danger {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--danger) 28%, transparent);
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding: 4px 0 8px;
+    }
+
     .toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: #1f2937; color: #fff; padding: 12px 20px; border-radius: 10px;
-      font-size: 0.85rem; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s;
-      z-index: 200; max-width: 90vw;
+      position: fixed;
+      bottom: calc(24px + var(--safe-b));
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: #1f2937;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 200;
+      max-width: 90vw;
+      box-shadow: var(--shadow-lg);
     }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
     .toast.success { background: var(--success); }
     .toast.error { background: var(--danger); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .flashcard__inner { transition: none; }
+      .progress-bar > div { transition: none; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🃏 Flashcard</h1>
-    <p>Impara le lingue — tema, difficoltà, ripetizione spaziata</p>
-  </header>
-
-  <div class="controls">
-    <div>
-      <label for="deckSelect">Mazzo</label>
-      <select id="deckSelect"></select>
-    </div>
-    <div>
-      <label for="themeSelect">Tema</label>
-      <select id="themeSelect"><option value="">Tutti i temi</option></select>
-    </div>
-    <div>
-      <label for="levelSelect">Difficoltà</label>
-      <select id="levelSelect"><option value="">Tutti i livelli</option></select>
-    </div>
-  </div>
-
-  <div class="extras">
-    <label><input type="checkbox" id="reviewOnly" /> 🔴 Solo da rivedere</label>
-    <label><input type="checkbox" id="dueOnly" /> ⏰ Solo in scadenza</label>
-    <label><input type="checkbox" id="autoSpeak" checked /> 🔊 Auto-pronuncia</label>
-    <span class="spacer"></span>
-    <button class="tool-btn" id="exportBtn" title="Esporta progressi come JSON">📤 Esporta</button>
-    <button class="tool-btn" id="importBtn" title="Importa progressi da JSON">📥 Importa</button>
-    <button class="tool-btn danger" id="resetBtn" title="Azzera progressi del mazzo corrente">↺ Reset</button>
-    <input type="file" id="importFile" accept="application/json,.json" hidden />
-  </div>
-
-  <div class="voice-panel" id="voicePanel">
-    <div class="voice-header" id="voiceHeader">
-      <span class="chev">▶</span>
-      <span>🎙️ Voce TTS</span>
-      <span class="badge" id="voiceBadge">Caricamento…</span>
-    </div>
-    <div class="voice-body">
-      <div class="voice-row">
-        <select id="voiceSelect"></select>
-        <button class="small-btn" id="voiceTestBtn">▶ Prova</button>
-        <button class="small-btn" id="voiceResetBtn" title="Torna alla scelta automatica">Auto</button>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <h1>🃏 Flashcard</h1>
+        <p>Impara le lingue · ripetizione spaziata</p>
       </div>
-      <div class="voice-hint" id="voiceHint">—</div>
+      <button type="button" class="theme-btn" id="themeBtn" title="Cambia tema" aria-label="Cambia tema">🌙</button>
+    </header>
+
+    <div class="controls">
+      <div class="field">
+        <label for="deckSelect">Mazzo</label>
+        <select id="deckSelect"></select>
+      </div>
+      <div class="field">
+        <label for="themeSelect">Tema</label>
+        <select id="themeSelect"><option value="">Tutti i temi</option></select>
+      </div>
+      <div class="field">
+        <label for="levelSelect">Difficoltà</label>
+        <select id="levelSelect"><option value="">Tutti i livelli</option></select>
+      </div>
     </div>
+
+    <div class="extras">
+      <label class="chip"><input type="checkbox" id="reviewOnly" /> Solo da rivedere</label>
+      <label class="chip"><input type="checkbox" id="dueOnly" /> In scadenza</label>
+      <label class="chip"><input type="checkbox" id="autoSpeak" checked /> Auto-audio</label>
+      <div class="tool-row">
+        <button type="button" class="tool-btn" id="exportBtn" title="Esporta progressi">📤</button>
+        <button type="button" class="tool-btn" id="importBtn" title="Importa progressi">📥</button>
+        <button type="button" class="tool-btn danger" id="resetBtn" title="Azzera progressi">↺</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json,.json" hidden />
+    </div>
+
+    <div class="voice-panel" id="voicePanel">
+      <div class="voice-header" id="voiceHeader">
+        <span class="chev">▶</span>
+        <span>🎙️ Voce TTS</span>
+        <span class="badge" id="voiceBadge">Caricamento…</span>
+      </div>
+      <div class="voice-body">
+        <div class="voice-row">
+          <select id="voiceSelect"></select>
+          <button type="button" class="small-btn" id="voiceTestBtn">▶ Prova</button>
+          <button type="button" class="small-btn" id="voiceResetBtn" title="Scelta automatica">Auto</button>
+        </div>
+        <div class="voice-hint" id="voiceHint">—</div>
+      </div>
+    </div>
+
+    <div class="progress">
+      <span id="counter">0 / 0</span>
+      <div class="progress-bar"><div id="progressFill"></div></div>
+      <span id="pct">0%</span>
+    </div>
+
+    <div id="cardWrap" class="card-wrap"></div>
+
+    <div class="actions">
+      <button type="button" id="prevBtn" class="btn">← Indietro</button>
+      <button type="button" id="flipBtn" class="btn primary">Gira</button>
+      <button type="button" id="nextBtn" class="btn">Avanti →</button>
+    </div>
+    <div class="actions secondary">
+      <button type="button" id="knowBtn" class="btn success">✓ Lo sapevo</button>
+      <button type="button" id="reviewBtn" class="btn danger">✗ Da rivedere</button>
+    </div>
+
+    <footer><span id="stats">—</span></footer>
   </div>
 
-  <div class="progress">
-    <span id="counter">0 / 0</span>
-    <div class="progress-bar"><div id="progressFill"></div></div>
-    <span id="pct">0%</span>
-  </div>
-
-  <div id="cardWrap" class="card-wrap"></div>
-
-  <div class="actions">
-    <button id="prevBtn" class="btn">← Indietro</button>
-    <button id="flipBtn" class="btn primary">Gira</button>
-    <button id="nextBtn" class="btn">Avanti →</button>
-  </div>
-  <div class="actions secondary">
-    <button id="knowBtn"   class="btn success">✓ Lo sapevo</button>
-    <button id="reviewBtn" class="btn danger">✗ Da rivedere</button>
-  </div>
-
-  <footer><span id="stats">—</span></footer>
   <div id="toast" class="toast"></div>
 
   <script src="data.js"></script>
