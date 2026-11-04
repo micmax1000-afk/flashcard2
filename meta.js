@@ -322,7 +322,7 @@
         added++;
       }
     }
-    if (added) console.log(`[meta.js] Aggiunte ${added} nuove carte al mazzo Inglese.`);
+    if (added) console.info(`[meta.js] Aggiunte ${added} nuove carte al mazzo Inglese.`);
   } else {
     console.warn("[meta.js] Mazzo 'en' non trovato.");
   }
@@ -345,7 +345,7 @@
       }
     }
   }
-  console.log(`[meta.js] Carte mappate: ${mappedCount} — non mappate: ${unmappedCount}`);
+  console.info(`[meta.js] Carte mappate: ${mappedCount} — non mappate: ${unmappedCount}`);
 
   // ---------------------------------------------------------------------
   // 9. FUNZIONI PUBBLICHE
