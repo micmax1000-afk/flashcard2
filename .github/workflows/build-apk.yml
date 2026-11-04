@@ -4,6 +4,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,3 +39,15 @@ jobs:
         with:
           name: app-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publish APK as GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk Flashcard-debug.apk
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest Flashcard-debug.apk \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "Flashcard — ultima build" \
+            --notes "APK debug generato da ${GITHUB_SHA::7}. Abilita l'installazione da fonti sconosciute per installarlo."
