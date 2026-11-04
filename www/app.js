@@ -92,6 +92,8 @@
   /* —— Tema chiaro / scuro —— */
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
+    var metaTheme = el("metaTheme");
+    if (metaTheme) metaTheme.setAttribute("content", theme === "dark" ? "#0a0e1f" : "#5b5ff0");
     var btn = el("themeBtn");
     if (btn) btn.textContent = theme === "dark" ? "\u2600\uFE0F" : "\uD83C\uDF19";
     try {
@@ -283,9 +285,9 @@
     var prog = getCardProgress(card);
     var statusTag = "";
     if (prog && prog.flag === "review") {
-      statusTag = '<span class="flashcard__side-tag" style="left:auto;right:14px;top:48px;background:var(--danger-soft);color:var(--danger)">Da rivedere</span>';
+      statusTag = '<span class="flashcard__status flashcard__status--review">Da rivedere</span>';
     } else if (prog && prog.flag === "known") {
-      statusTag = '<span class="flashcard__side-tag" style="left:auto;right:14px;top:48px;background:var(--success-soft);color:var(--success)">Saputa</span>';
+      statusTag = '<span class="flashcard__status flashcard__status--known">Saputa</span>';
     }
 
     wrap.innerHTML =
@@ -349,7 +351,7 @@
       themeSel.innerHTML = "";
       var allT = document.createElement("option");
       allT.value = "";
-      allT.textContent = "Tutti i temi";
+      allT.textContent = "Tutti";
       themeSel.appendChild(allT);
       THEMES.forEach(function (t) {
         var o = document.createElement("option");
@@ -362,7 +364,7 @@
       levelSel.innerHTML = "";
       var allL = document.createElement("option");
       allL.value = "";
-      allL.textContent = "Tutti i livelli";
+      allL.textContent = "Tutti";
       levelSel.appendChild(allL);
       LEVELS.forEach(function (lv) {
         var o = document.createElement("option");
