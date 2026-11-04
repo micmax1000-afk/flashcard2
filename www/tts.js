@@ -150,7 +150,7 @@
         state.TextToSpeech = TextToSpeech;
         await loadNativeVoices();
         state.nativeInitialized = true;
-        console.log("[tts.js] TTS nativo Android attivo");
+        console.info("[tts.js] TTS nativo Android attivo");
       } catch (err) {
         console.warn("[tts.js] Init nativo fallito:", err);
         state.native = false;
@@ -178,7 +178,7 @@
       }
       state.voicesByLangNative = byLang;
       state.voicesReadyNative = true;
-      console.log("[tts.js] " + voices.length + " voci native caricate");
+      console.info("[tts.js] " + voices.length + " voci native caricate");
       flushReadyCallbacks();
     } catch (err) {
       console.warn("[tts.js] getSupportedVoices fallito:", err);
